@@ -45,23 +45,38 @@ public class ARPlaneControlToggler : MonoBehaviour
 
     private void SetPlanesState(bool enableState)
     {
-        if (planeManager != null)
-        {
-            planeManager.enabled = enableState;
+        if (planeManager == null) return;
 
+        // 1. Toggle the plane manager subsystem (stops/starts active plane detection)
+        planeManager.enabled = enableState;
+
+        if (!enableState)
+        {
+            // 2. Destroy existing plane GameObjects from the scene hierarchy
             foreach (var plane in planeManager.trackables)
             {
-                plane.gameObject.SetActive(enableState);
+                Destroy(plane.gameObject);
             }
+
+            // 3. Clear all stored plane references so ARFoundation rescans from scratch
+            planeManager.SetTrackablesActive(false);
+        }
+        else
+        {
+            // Re-enable detection pool for new planes
+            planeManager.SetTrackablesActive(true);
         }
     }
 
     private void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARPlane> eventArgs)
     {
-        // Ensure newly added planes inherit the current visibility toggle state
-        foreach (var newPlane in eventArgs.added)
+        // Only active when enabled
+        if (!arePlanesVisible)
         {
-            newPlane.gameObject.SetActive(arePlanesVisible);
+            foreach (var newPlane in eventArgs.added)
+            {
+                newPlane.gameObject.SetActive(false);
+            }
         }
     }
 }
