@@ -27,6 +27,9 @@ public class SpawnMeccha : MonoBehaviour
     [Header("Coordinate Display")]
     public MecchaCoordinateDisplay coordinateDisplay;
 
+    [Header("Counter Manager")]
+    public MecchaCounterManager counterManager;
+
     private List<GameObject> spawnedMecchas = new List<GameObject>();
 
     private void Start()
@@ -113,6 +116,11 @@ public class SpawnMeccha : MonoBehaviour
             spawnedMecchas.Add(newMeccha);
             OnMecchaSpawned(newMeccha);
 
+            if (counterManager != null)
+            {
+                counterManager.IncrementCount(); // Increment +1 count of spawned meccha - Meccha Counter Manager
+            }
+
             if (selectionPanel != null)
                 selectionPanel.SetActive(false);
         }
@@ -179,6 +187,10 @@ public class SpawnMeccha : MonoBehaviour
 
             // 2. Remove from list
             spawnedMecchas.RemoveAt(lastIndex);
+            if (counterManager != null)
+            {
+                counterManager.DecrementCount(); // Decrement -1 count of meccha - Meccha Counter Manager
+            }
 
             // 3. Target remaining object
             GameObject prevMeccha = spawnedMecchas.Count > 0 ? spawnedMecchas[spawnedMecchas.Count - 1] : null;
