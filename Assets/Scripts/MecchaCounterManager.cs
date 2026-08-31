@@ -16,27 +16,21 @@ public class MecchaCounterManager : MonoBehaviour
         UpdateCounterUI();
     }
 
-    /// <summary>
-    /// Call when a new Meccha is spawned
-    /// </summary>
+    // Call when a new Meccha is spawned
     public void IncrementCount()
     {
         currentCount++;
         UpdateCounterUI();
     }
 
-    /// <summary>
-    /// Call when a Meccha is deleted
-    /// </summary>
+    // Call when a Meccha is deleted
     public void DecrementCount()
     {
         currentCount = Mathf.Max(0, currentCount - 1);
         UpdateCounterUI();
     }
 
-    /// <summary>
-    /// Updates the text display
-    /// </summary>
+    // Updates the text display
     private void UpdateCounterUI()
     {
         if (counterText != null)
