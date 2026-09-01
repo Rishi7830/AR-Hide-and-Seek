@@ -2450,6 +2450,78 @@ MonoBehaviour:
   currentMeccha: {fileID: 0}
   stepDistance: 0.05
   rotationAngle: 15
+--- !u!1 &490568819
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 490568820}
+  - component: {fileID: 490568822}
+  - component: {fileID: 490568821}
+  m_Layer: 5
+  m_Name: ChosenColorBox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &490568820
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 490568819}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1707641157}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -15}
+  m_SizeDelta: {x: 200, y: 30}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &490568821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 490568819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 0}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+--- !u!222 &490568822
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 490568819}
+  m_CullTransparentMesh: 1
 --- !u!1 &514495553
 GameObject:
   m_ObjectHideFlags: 0
@@ -4015,9 +4087,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1764976138}
-        m_TargetAssemblyTypeName: ARModeSwitcher, Assembly-CSharp
-        m_MethodName: ToggleARMode
+      - m_Target: {fileID: 2099970476}
+        m_TargetAssemblyTypeName: PaintUIController, Assembly-CSharp
+        m_MethodName: TogglePaintMode
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4451,7 +4523,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 28, y: -10}
+  m_AnchoredPosition: {x: 36, y: 4}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1206255322
@@ -4474,7 +4546,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Paint Mode
+  m_text: Chosen Color
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4501,8 +4573,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 18
+  m_fontSizeBase: 18
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -6003,7 +6075,7 @@ GameObject:
   - component: {fileID: 1707641159}
   - component: {fileID: 1707641158}
   m_Layer: 5
-  m_Name: PaintModePanel
+  m_Name: ColorPreviewPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6022,6 +6094,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1206255321}
+  - {fileID: 490568820}
   m_Father: {fileID: 2099970469}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -7169,6 +7242,7 @@ MonoBehaviour:
   trackedImageManager: {fileID: 1976924005}
   palettePrefab: {fileID: 6939981575303524947, guid: b9c63796a3ddd324e9f3061d9a5d91bb, type: 3}
   brushTipPrefab: {fileID: 7823139763231463376, guid: f1b45bf1bd5604f45bf03456410216c4, type: 3}
+  keepPaletteAnchored: 1
 --- !u!1 &2000091100
 GameObject:
   m_ObjectHideFlags: 0
@@ -7690,6 +7764,7 @@ GameObject:
   - component: {fileID: 2099970473}
   - component: {fileID: 2099970474}
   - component: {fileID: 2099970475}
+  - component: {fileID: 2099970476}
   m_Layer: 5
   m_Name: HiderGamePanel
   m_TagString: Untagged
@@ -7935,6 +8010,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MecchaCounterManager
   counterText: {fileID: 1705963453}
   labelPrefix: 'Mecchas Spawned: '
+--- !u!114 &2099970476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2099970465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1200693c1acb3d04c8b016e06e7b857d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaintUIController
+  colorPreviewPanel: {fileID: 1707641156}
+  chosenColorBox: {fileID: 490568821}
+  isPaintModeActive: 0
 --- !u!1 &2105981184
 GameObject:
   m_ObjectHideFlags: 0
