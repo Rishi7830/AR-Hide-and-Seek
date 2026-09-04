@@ -12,6 +12,7 @@ public class MainMenuController : MonoBehaviour
     public GameObject mainMenuPanel;
     public GameObject hiderGamePanel;
     public GameObject hunterGamePanel; // Optional placeholder for future implementation
+    // public GameObject seekerGamePanel;
 
     [Header("Scene Management Names (Option B)")]
     public string hiderSceneName = "HiderScene";
@@ -20,6 +21,7 @@ public class MainMenuController : MonoBehaviour
     [Header("UI Buttons")]
     public Button hiderButton;
     public Button hunterButton;
+    // public Button seekerButton;
 
     private void Start()
     {
@@ -56,7 +58,13 @@ public class MainMenuController : MonoBehaviour
     {
         if (usePanelSwapping)
         {
-            // Placeholder feedback for Hunter mode implementation
+            // Hide main menu
+            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+            // Hide Hider panel
+            if (hiderGamePanel != null) hiderGamePanel.SetActive(false);
+            // Show Hunter panel
+            if (hunterGamePanel != null) hunterGamePanel.SetActive(true);
+
             Debug.Log("Hunter mode selected.");
         }
         else

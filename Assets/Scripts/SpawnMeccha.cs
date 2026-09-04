@@ -49,123 +49,276 @@ public class SpawnMeccha : MonoBehaviour
 
     public void SpawnHorizontal()
     {
-        SpawnMecchaOnPlane(horizontalMecchaPrefab, Quaternion.identity);
+        SpawnMecchaOnPlane(
+            horizontalMecchaPrefab,
+            Quaternion.identity
+        );
     }
 
     public void SpawnVertical()
     {
-        Quaternion tilt90OnX = Quaternion.Euler(90f, 0f, 0f);
-        SpawnMecchaOnPlane(verticalMecchaPrefab, tilt90OnX);
+        Quaternion tilt90OnX =
+            Quaternion.Euler(90f, 0f, 0f);
+
+        SpawnMecchaOnPlane(
+            verticalMecchaPrefab,
+            tilt90OnX
+        );
     }
 
-    private void SpawnMecchaOnPlane(GameObject prefabToSpawn, Quaternion extraRotation)
+    private void SpawnMecchaOnPlane(
+        GameObject prefabToSpawn,
+        Quaternion extraRotation
+    )
     {
         if (planeManager == null || prefabToSpawn == null)
         {
-            Debug.LogWarning("Missing Plane Manager or Prefab reference.");
+            Debug.LogWarning(
+                "Missing Plane Manager or Prefab reference."
+            );
             return;
         }
 
-        ARPlane nearestPlane = GetNearestAvailablePlane();
-
-        if (nearestPlane != null)
+        if (arCamera == null)
         {
-            // Close active fine-tuning session safely before creating new object
-            if (fineTuneController != null)
-            {
-                fineTuneController.CloseFineTunePanel();
-            }
+            Debug.LogWarning(
+                "AR Camera reference is missing."
+            );
+            return;
+        }
 
-            Vector3 spawnPosition = nearestPlane.center;
-            Quaternion baseRotation;
+        ARPlane nearestPlane =
+            GetNearestAvailablePlane();
 
-            if (nearestPlane.alignment == PlaneAlignment.Vertical)
-            {
-                baseRotation = Quaternion.LookRotation(nearestPlane.normal);
-            }
-            else
-            {
-                Vector3 lookDirection = arCamera.transform.position - spawnPosition;
-                lookDirection.y = 0;
+        if (nearestPlane == null)
+        {
+            Debug.LogWarning(
+                "No available plane found in sight."
+            );
+            return;
+        }
 
-                if (lookDirection == Vector3.zero)
-                {
-                    lookDirection = arCamera.transform.forward;
-                    lookDirection.y = 0;
-                }
+        // CLOSE ANY ACTIVE FINE-TUNING SESSION
 
-                baseRotation = Quaternion.LookRotation(lookDirection);
-            }
+        if (fineTuneController != null)
+        {
+            fineTuneController.CloseFineTunePanel();
+        }
 
-            Quaternion finalRotation = baseRotation * extraRotation;
+        // CALCULATE SPAWN POSITION / ROTATION
 
-            // 1. Instantiate prefab
-            GameObject newMeccha = Instantiate(prefabToSpawn, spawnPosition, finalRotation);
+        Vector3 spawnPosition =
+            nearestPlane.center;
 
-            // 2. Attach ARAnchor FIRST before target registration
-            if (anchorManager != null)
-            {
-                ARAnchor anchor = newMeccha.AddComponent<ARAnchor>();
-                if (anchor == null)
-                {
-                    Debug.LogWarning("Failed to attach ARAnchor.");
-                }
-            }
+        Quaternion baseRotation;
 
-            // 3. Register tracking
-            spawnedMecchas.Add(newMeccha);
-            OnMecchaSpawned(newMeccha);
-
-            if (counterManager != null)
-            {
-                counterManager.IncrementCount(); // Increment +1 count of spawned meccha - Meccha Counter Manager
-            }
-
-            if (selectionPanel != null)
-                selectionPanel.SetActive(false);
+        if (nearestPlane.alignment ==
+            PlaneAlignment.Vertical)
+        {
+            baseRotation =
+                Quaternion.LookRotation(
+                    nearestPlane.normal
+                );
         }
         else
         {
-            Debug.LogWarning("No available plane found in sight.");
+            Vector3 lookDirection =
+                arCamera.transform.position -
+                spawnPosition;
+
+            // Keep the Meccha upright on horizontal planes
+            lookDirection.y = 0f;
+
+            if (lookDirection.sqrMagnitude < 0.0001f)
+            {
+                lookDirection =
+                    arCamera.transform.forward;
+
+                lookDirection.y = 0f;
+            }
+
+            if (lookDirection.sqrMagnitude < 0.0001f)
+            {
+                lookDirection = Vector3.forward;
+            }
+
+            baseRotation =
+                Quaternion.LookRotation(
+                    lookDirection.normalized
+                );
+        }
+
+        Quaternion finalRotation =
+            baseRotation * extraRotation;
+
+        // CREATE ANCHOR CONTAINER
+
+        GameObject anchorObject =
+            new GameObject("MecchaAnchor");
+
+        anchorObject.transform.SetPositionAndRotation(
+            spawnPosition,
+            finalRotation
+        );
+
+        // Add ARAnchor using the API supported by the project.
+        ARAnchor newAnchor =
+            anchorObject.AddComponent<ARAnchor>();
+
+        if (newAnchor == null)
+        {
+            Debug.LogWarning(
+                "Failed to create ARAnchor."
+            );
+
+            Destroy(anchorObject);
+            return;
+        }
+
+        // CREATE MECCHA AS CHILD OF THE ANCHOR
+
+        GameObject newMeccha =
+            Instantiate(
+                prefabToSpawn,
+                anchorObject.transform
+            );
+
+        if (newMeccha == null)
+        {
+            Debug.LogWarning(
+                "Failed to instantiate Meccha."
+            );
+
+            Destroy(anchorObject);
+            return;
+        }
+
+        // Meccha starts exactly at the anchor.
+        newMeccha.transform.localPosition =
+            Vector3.zero;
+
+        newMeccha.transform.localRotation =
+            Quaternion.identity;
+
+        // Preserve prefab scale.
+        // We intentionally do not modify localScale.
+
+        Debug.Log(
+            "Meccha spawned successfully. " +
+            "Anchor: " + anchorObject.name +
+            " | Meccha: " + newMeccha.name
+        );
+
+        // REGISTER MECCHA
+
+        spawnedMecchas.Add(newMeccha);
+
+        OnMecchaSpawned(newMeccha);
+
+        // UPDATE COUNTER
+
+        if (counterManager != null)
+        {
+            counterManager.IncrementCount();
+        }
+
+        // CLOSE SELECTION PANEL
+
+        if (selectionPanel != null)
+        {
+            selectionPanel.SetActive(false);
         }
     }
 
     private ARPlane GetNearestAvailablePlane()
     {
-        ARPlane closestPlane = null;
-        float shortestDistance = float.MaxValue;
-        Vector3 cameraPosition = arCamera.transform.position;
+        if (planeManager == null)
+            return null;
 
-        foreach (var plane in planeManager.trackables)
+        if (arCamera == null)
+            return null;
+
+        ARPlane closestPlane = null;
+
+        float shortestDistance =
+            float.MaxValue;
+
+        Vector3 cameraPosition =
+            arCamera.transform.position;
+
+        foreach (
+            ARPlane plane
+            in planeManager.trackables
+        )
         {
-            if (plane.trackingState != TrackingState.Tracking)
+            // Only use currently tracked planes.
+            if (
+                plane.trackingState !=
+                TrackingState.Tracking
+            )
+            {
+                continue;
+            }
+
+            bool isValidPlane =
+                plane.alignment ==
+                    PlaneAlignment.HorizontalUp ||
+                plane.alignment ==
+                    PlaneAlignment.HorizontalDown ||
+                plane.alignment ==
+                    PlaneAlignment.Vertical;
+
+            if (!isValidPlane)
                 continue;
 
-            bool isValidPlane = (plane.alignment == PlaneAlignment.HorizontalUp ||
-                                 plane.alignment == PlaneAlignment.HorizontalDown ||
-                                 plane.alignment == PlaneAlignment.Vertical);
+            // CHECK WHETHER THIS PLANE IS ALREADY OCCUPIED
 
-            if (isValidPlane)
+            bool isOccupied = false;
+
+            foreach (
+                GameObject spawned
+                in spawnedMecchas
+            )
             {
-                bool isOccupied = false;
-                foreach (var spawned in spawnedMecchas)
-                {
-                    if (spawned != null && Vector3.Distance(plane.center, spawned.transform.position) < minDistanceBetweenSpawns)
-                    {
-                        isOccupied = true;
-                        break;
-                    }
-                }
+                if (spawned == null)
+                    continue;
 
-                if (!isOccupied)
+                float distance =
+                    Vector3.Distance(
+                        plane.center,
+                        spawned.transform.position
+                    );
+
+                if (
+                    distance <
+                    minDistanceBetweenSpawns
+                )
                 {
-                    float distance = Vector3.Distance(cameraPosition, plane.center);
-                    if (distance < shortestDistance)
-                    {
-                        shortestDistance = distance;
-                        closestPlane = plane;
-                    }
+                    isOccupied = true;
+                    break;
                 }
+            }
+
+            if (isOccupied)
+                continue;
+
+            // FIND CLOSEST VALID PLANE
+
+            float cameraDistance =
+                Vector3.Distance(
+                    cameraPosition,
+                    plane.center
+                );
+
+            if (
+                cameraDistance <
+                shortestDistance
+            )
+            {
+                shortestDistance =
+                    cameraDistance;
+
+                closestPlane = plane;
             }
         }
 
@@ -174,56 +327,118 @@ public class SpawnMeccha : MonoBehaviour
 
     public void DeleteMostRecentMeccha()
     {
-        if (spawnedMecchas.Count > 0)
-        {
-            int lastIndex = spawnedMecchas.Count - 1;
-            GameObject lastMeccha = spawnedMecchas[lastIndex];
+        if (spawnedMecchas.Count == 0)
+            return;
 
-            // 1. Close fine tuning panel if active
-            if (fineTuneController != null)
-            {
-                fineTuneController.CloseFineTunePanel();
-            }
+        int lastIndex =
+            spawnedMecchas.Count - 1;
 
-            // 2. Remove from list
-            spawnedMecchas.RemoveAt(lastIndex);
-            if (counterManager != null)
-            {
-                counterManager.DecrementCount(); // Decrement -1 count of meccha - Meccha Counter Manager
-            }
+        GameObject lastMeccha =
+            spawnedMecchas[lastIndex];
 
-            // 3. Target remaining object
-            GameObject prevMeccha = spawnedMecchas.Count > 0 ? spawnedMecchas[spawnedMecchas.Count - 1] : null;
+        // CLOSE FINE-TUNE PANEL
 
-            if (fineTuneController != null)
-                fineTuneController.SetTargetMeccha(prevMeccha);
-
-            if (coordinateDisplay != null)
-                coordinateDisplay.SetTargetMeccha(prevMeccha);
-
-            // 4. Destroy Object and Anchor
-            if (lastMeccha != null)
-            {
-                ARAnchor anchor = lastMeccha.GetComponent<ARAnchor>();
-                if (anchor != null)
-                {
-                    Destroy(anchor);
-                }
-                Destroy(lastMeccha);
-            }
-        }
-    }
-
-    public void OnMecchaSpawned(GameObject newlySpawnedMeccha)
-    {
         if (fineTuneController != null)
         {
-            fineTuneController.SetTargetMeccha(newlySpawnedMeccha);
+            fineTuneController.CloseFineTunePanel();
+        }
+
+        // REMOVE FROM TRACKING LIST
+
+        spawnedMecchas.RemoveAt(lastIndex);
+
+        if (counterManager != null)
+        {
+            counterManager.DecrementCount();
+        }
+
+        // TARGET PREVIOUS MECCHA
+
+        GameObject prevMeccha =
+            spawnedMecchas.Count > 0
+                ? spawnedMecchas[
+                    spawnedMecchas.Count - 1
+                ]
+                : null;
+
+        if (fineTuneController != null)
+        {
+            fineTuneController.SetTargetMeccha(
+                prevMeccha
+            );
         }
 
         if (coordinateDisplay != null)
         {
-            coordinateDisplay.SetTargetMeccha(newlySpawnedMeccha);
+            coordinateDisplay.SetTargetMeccha(
+                prevMeccha
+            );
+        }
+
+        // DELETE MECCHA AND ITS ANCHOR
+
+        if (lastMeccha != null)
+        {
+            Transform parent =
+                lastMeccha.transform.parent;
+
+            if (parent != null)
+            {
+                ARAnchor parentAnchor =
+                    parent.GetComponent<ARAnchor>();
+
+                if (parentAnchor != null)
+                {
+                    // Because the Meccha is a child of the
+                    // anchor, destroying the anchor also
+                    // destroys the Meccha.
+                    Destroy(parentAnchor.gameObject);
+
+                    Debug.Log(
+                        "Deleted Meccha and its ARAnchor."
+                    );
+                }
+                else
+                {
+                    // Safety fallback.
+                    Destroy(lastMeccha);
+
+                    Debug.Log(
+                        "Deleted Meccha without parent ARAnchor."
+                    );
+                }
+            }
+            else
+            {
+                // Safety fallback.
+                Destroy(lastMeccha);
+
+                Debug.Log(
+                    "Deleted Meccha with no parent."
+                );
+            }
+        }
+    }
+
+    public void OnMecchaSpawned(
+        GameObject newlySpawnedMeccha
+    )
+    {
+        if (newlySpawnedMeccha == null)
+            return;
+
+        if (fineTuneController != null)
+        {
+            fineTuneController.SetTargetMeccha(
+                newlySpawnedMeccha
+            );
+        }
+
+        if (coordinateDisplay != null)
+        {
+            coordinateDisplay.SetTargetMeccha(
+                newlySpawnedMeccha
+            );
         }
     }
 }
