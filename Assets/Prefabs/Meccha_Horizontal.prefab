@@ -234,6 +234,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3711351213329926876}
   - component: {fileID: 342703144426162166}
+  - component: {fileID: 5644277081382413841}
+  - component: {fileID: 557660327106283173}
   m_Layer: 6
   m_Name: char02
   m_TagString: Untagged
@@ -340,6 +342,45 @@ SkinnedMeshRenderer:
     m_Center: {x: 0.003483951, y: -0.038615406, z: -0.37100738}
     m_Extent: {x: 1.2873604, y: 0.6418213, z: 1.4979234}
   m_DirtyAABB: 0
+--- !u!64 &5644277081382413841
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710405957609152647}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 7957087864999535579, guid: d0f3eb0b480c07040a91704b3878cd31, type: 3}
+--- !u!114 &557660327106283173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710405957609152647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db6d4b693b5ede04aae96872934a7276, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MecchaTexturePainter
+  targetRenderer: {fileID: 342703144426162166}
+  textureWidth: 1024
+  textureHeight: 1024
+  brushRadius: 25
+  logPaintInfo: 1
 --- !u!1 &838906132019361580
 GameObject:
   m_ObjectHideFlags: 0

@@ -6770,6 +6770,7 @@ MonoBehaviour:
   colorPreviewPanel: {fileID: 1707641156}
   chosenColorBox: {fileID: 490568821}
   startInPaintMode: 0
+  startingColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!4 &1773143896
 Transform:
   m_ObjectHideFlags: 0
@@ -7568,7 +7569,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ARFoundationPaintManager
   trackedImageManager: {fileID: 1976924005}
   palettePrefab: {fileID: 6939981575303524947, guid: b9c63796a3ddd324e9f3061d9a5d91bb, type: 3}
-  brushTipPrefab: {fileID: 7823139763231463376, guid: f1b45bf1bd5604f45bf03456410216c4, type: 3}
+  brushTipPrefab: {fileID: 0}
   keepPaletteAnchored: 1
 --- !u!1 &2000091100
 GameObject:

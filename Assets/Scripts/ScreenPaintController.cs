@@ -1,21 +1,37 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+
+using EnhancedTouch =
+    UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 public class ScreenPaintController : MonoBehaviour
 {
-    [Header("AR Camera")]
+    [Header("Camera")]
     [SerializeField] private Camera arCamera;
 
-    [Header("Raycast Settings")]
+    [Header("Raycast")]
     [SerializeField] private float rayDistance = 100f;
 
-    [Header("Input Settings")]
+    [Header("Editor Testing")]
     [SerializeField] private bool allowMouseInEditor = true;
+
+    private MecchaTexturePainter currentPainter;
+
+    private void Awake()
+    {
+        // Enable New Input System Enhanced Touch.
+        EnhancedTouchSupport.Enable();
+    }
+
+    private void OnDestroy()
+    {
+        EnhancedTouchSupport.Disable();
+    }
 
     private void Start()
     {
-        // Automatically find the AR camera if one wasn't assigned.
         if (arCamera == null)
         {
             arCamera = Camera.main;
@@ -27,20 +43,12 @@ public class ScreenPaintController : MonoBehaviour
                 "[ScreenPaint] AR Camera not found."
             );
         }
-        else
-        {
-            Debug.Log(
-                "[ScreenPaint] AR Camera found: " +
-                arCamera.name
-            );
-        }
     }
 
     private void Update()
     {
-        // ---------------------------------------------------------
-        // CHECK PAINT MODE
-        // ---------------------------------------------------------
+
+        // PAINT MODE CHECK
 
         if (PaintUIController.Instance == null)
         {
@@ -49,99 +57,109 @@ public class ScreenPaintController : MonoBehaviour
 
         if (!PaintUIController.Instance.IsPaintModeActive)
         {
+            if (currentPainter != null)
+            {
+                currentPainter.EndStroke();
+                currentPainter = null;
+            }
+
             return;
         }
 
-        // ---------------------------------------------------------
-        // NEW INPUT SYSTEM - ANDROID TOUCH
-        // ---------------------------------------------------------
+        // NEW INPUT SYSTEM TOUCH
 
-        if (Touchscreen.current != null)
+        if (EnhancedTouch.activeTouches.Count > 0)
         {
-            var primaryTouch =
-                Touchscreen.current.primaryTouch;
+            EnhancedTouch touch =
+                EnhancedTouch.activeTouches[0];
 
-            if (primaryTouch.press.wasPressedThisFrame)
-            {
-                Vector2 screenPosition =
-                    primaryTouch.position.ReadValue();
+            ProcessTouch(touch);
 
-                int touchId =
-                    primaryTouch.touchId.ReadValue();
-
-                ProcessScreenTap(
-                    screenPosition,
-                    touchId
-                );
-            }
+            return;
         }
 
-        // ---------------------------------------------------------
-        // NEW INPUT SYSTEM - MOUSE
-        // ---------------------------------------------------------
+        // UNITY EDITOR MOUSE
 
         if (
             allowMouseInEditor &&
-            Mouse.current != null &&
-            Mouse.current.leftButton.wasPressedThisFrame
+            Mouse.current != null
         )
         {
-            Vector2 mousePosition =
-                Mouse.current.position.ReadValue();
+            if (
+                Mouse.current.leftButton
+                    .wasPressedThisFrame
+            )
+            {
+                BeginPaint(
+                    Mouse.current.position.ReadValue()
+                );
+            }
 
-            ProcessMouseClick(mousePosition);
+            if (
+                Mouse.current.leftButton.isPressed
+            )
+            {
+                ContinuePaint(
+                    Mouse.current.position.ReadValue()
+                );
+            }
+
+            if (
+                Mouse.current.leftButton
+                    .wasReleasedThisFrame
+            )
+            {
+                EndPaint();
+            }
         }
     }
 
-    // =============================================================
-    // ANDROID TOUCH
-    // =============================================================
+    // TOUCH PROCESSING
 
-    private void ProcessScreenTap(
-        Vector2 screenPosition,
-        int touchId
+    private void ProcessTouch(
+        EnhancedTouch touch
     )
     {
-        // Don't paint/select a sphere if the finger
-        // is currently pressing a UI button/panel.
-        if (IsTouchOverUI(touchId))
+        Vector2 screenPosition =
+            touch.screenPosition;
+
+        switch (touch.phase)
         {
-            Debug.Log(
-                "[ScreenPaint] Touch ignored because it is over UI."
-            );
+            case UnityEngine.InputSystem.TouchPhase.Began:
 
-            return;
+                BeginPaint(screenPosition);
+
+                break;
+
+            case UnityEngine.InputSystem.TouchPhase.Moved:
+
+                ContinuePaint(screenPosition);
+
+                break;
+
+            case UnityEngine.InputSystem.TouchPhase.Stationary:
+
+                ContinuePaint(screenPosition);
+
+                break;
+
+            case UnityEngine.InputSystem.TouchPhase.Ended:
+
+                EndPaint();
+
+                break;
+
+            case UnityEngine.InputSystem.TouchPhase.Canceled:
+
+                EndPaint();
+
+                break;
         }
-
-        PerformRaycast(screenPosition);
     }
 
-    // =============================================================
-    // MOUSE / UNITY EDITOR
-    // =============================================================
+    // BEGIN PAINT / COLOR SELECTION
 
-    private void ProcessMouseClick(
-        Vector2 screenPosition
-    )
-    {
-        if (EventSystem.current != null &&
-            EventSystem.current.IsPointerOverGameObject())
-        {
-            Debug.Log(
-                "[ScreenPaint] Mouse click ignored because it is over UI."
-            );
-
-            return;
-        }
-
-        PerformRaycast(screenPosition);
-    }
-
-    // =============================================================
-    // RAYCAST
-    // =============================================================
-
-    private void PerformRaycast(
+    private void BeginPaint(
         Vector2 screenPosition
     )
     {
@@ -150,41 +168,39 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        // Create a ray from the AR camera through
-        // the touched screen pixel.
+        // IGNORE UI
+
+        if (IsPointerOverUI())
+        {
+            return;
+        }
+
+        // CREATE CAMERA RAY
+
         Ray ray =
             arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        RaycastHit hit;
-
-        bool didHit =
-            Physics.Raycast(
+        if (!Physics.Raycast(
                 ray,
-                out hit,
-                rayDistance,
-                Physics.DefaultRaycastLayers,
-                QueryTriggerInteraction.Collide
-            );
-
-        if (!didHit)
+                out RaycastHit hit,
+                rayDistance
+            ))
         {
             Debug.Log(
-                "[ScreenPaint] Tap did not hit any 3D collider."
+                "[ScreenPaint] Nothing was hit."
             );
 
             return;
         }
 
         Debug.Log(
-            "[ScreenPaint] Ray hit: " +
+            "[ScreenPaint] Hit: " +
             hit.collider.name
         );
 
-        // ---------------------------------------------------------
-        // CHECK FOR COLOR SPHERE
-        // ---------------------------------------------------------
+        // COLOR SPHERE
 
         ColorSphere colorSphere =
             hit.collider.GetComponent<ColorSphere>();
@@ -197,24 +213,268 @@ public class ScreenPaintController : MonoBehaviour
 
         if (colorSphere != null)
         {
-            SelectColor(colorSphere);
+            SelectColor(
+                colorSphere
+            );
 
             return;
         }
 
-        // ---------------------------------------------------------
-        // SOMETHING ELSE WAS HIT
-        // ---------------------------------------------------------
+        // MECCHA
 
-        Debug.Log(
-            "[ScreenPaint] Hit object is not a ColorSphere: " +
-            hit.collider.name
+        MecchaTexturePainter painter =
+            hit.collider.GetComponent<
+                MecchaTexturePainter>();
+
+        if (painter == null)
+        {
+            painter =
+                hit.collider.GetComponentInParent<
+                    MecchaTexturePainter>();
+        }
+
+        if (painter != null)
+        {
+            // IMPORTANT: calculate the UV manually instead.
+
+            if (!TryCalculateHitUV(
+                    hit,
+                    out Vector2 uv
+                ))
+            {
+                Debug.LogWarning(
+                    "[ScreenPaint] Could not calculate UV " +
+                    "for Meccha hit."
+                );
+
+                return;
+            }
+
+            StartMecchaStroke(
+                painter,
+                uv
+            );
+        }
+    }
+
+    // CONTINUE PAINT
+
+    private void ContinuePaint(
+        Vector2 screenPosition
+    )
+    {
+        if (currentPainter == null)
+        {
+            return;
+        }
+
+        if (arCamera == null)
+        {
+            return;
+        }
+
+        if (IsPointerOverUI())
+        {
+            return;
+        }
+
+        Ray ray =
+            arCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+        if (!Physics.Raycast(
+                ray,
+                out RaycastHit hit,
+                rayDistance
+            ))
+        {
+            return;
+        }
+
+        MecchaTexturePainter painter =
+            hit.collider.GetComponent<
+                MecchaTexturePainter>();
+
+        if (painter == null)
+        {
+            painter =
+                hit.collider.GetComponentInParent<
+                    MecchaTexturePainter>();
+        }
+
+        if (painter != currentPainter)
+        {
+            return;
+        }
+
+        // MANUAL UV CALCULATION
+
+        if (!TryCalculateHitUV(
+                hit,
+                out Vector2 uv
+            ))
+        {
+            return;
+        }
+
+        currentPainter.ContinueStroke(
+            uv
         );
     }
 
-    // =============================================================
-    // SELECT COLOR
-    // =============================================================
+    // CALCULATE UV FROM TRIANGLE + BARYCENTRIC COORDINATES
+
+    private bool TryCalculateHitUV(
+        RaycastHit hit,
+        out Vector2 uv
+    )
+    {
+        uv = Vector2.zero;
+
+        // We specifically need a MeshCollider.
+        MeshCollider meshCollider =
+            hit.collider as MeshCollider;
+
+        if (meshCollider == null)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] Collider is not a MeshCollider."
+            );
+
+            return false;
+        }
+
+        Mesh mesh =
+            meshCollider.sharedMesh;
+
+        if (mesh == null)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] MeshCollider has no mesh."
+            );
+
+            return false;
+        }
+
+        // CHECK TRIANGLE INDEX
+
+        int triangleIndex =
+            hit.triangleIndex;
+
+        if (triangleIndex < 0)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] Invalid triangle index."
+            );
+
+            return false;
+        }
+
+        // Each triangle contains 3 vertex indices.
+        int triangleStart =
+            triangleIndex * 3;
+
+        if (
+            triangleStart + 2 >=
+            mesh.triangles.Length
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] Triangle index is outside mesh."
+            );
+
+            return false;
+        }
+
+        // GET TRIANGLE VERTEX INDICES
+
+        int[] triangles =
+            mesh.triangles;
+
+        int vertexIndexA =
+            triangles[triangleStart];
+
+        int vertexIndexB =
+            triangles[triangleStart + 1];
+
+        int vertexIndexC =
+            triangles[triangleStart + 2];
+
+        // GET UV0
+
+        Vector2[] uvs =
+            mesh.uv;
+
+        if (
+            uvs == null ||
+            uvs.Length == 0
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] Mesh has no UV0 coordinates."
+            );
+
+            return false;
+        }
+
+        if (
+            vertexIndexA >= uvs.Length ||
+            vertexIndexB >= uvs.Length ||
+            vertexIndexC >= uvs.Length
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] UV array does not contain " +
+                "the triangle vertices."
+            );
+
+            return false;
+        }
+
+        Vector2 uvA =
+            uvs[vertexIndexA];
+
+        Vector2 uvB =
+            uvs[vertexIndexB];
+
+        Vector2 uvC =
+            uvs[vertexIndexC];
+
+        // INTERPOLATE USING BARYCENTRIC COORDINATES
+
+        Vector3 bary =
+            hit.barycentricCoordinate;
+
+        uv =
+            uvA * bary.x +
+            uvB * bary.y +
+            uvC * bary.z;
+
+        // KEEP UV IN NORMAL RANGE
+
+        uv.x =
+            Mathf.Clamp01(uv.x);
+
+        uv.y =
+            Mathf.Clamp01(uv.y);
+
+        return true;
+    }
+
+    // END PAINT
+
+    private void EndPaint()
+    {
+        if (currentPainter != null)
+        {
+            currentPainter.EndStroke();
+
+            currentPainter = null;
+        }
+    }
+
+    // COLOR SELECTION
 
     private void SelectColor(
         ColorSphere colorSphere
@@ -228,7 +488,6 @@ public class ScreenPaintController : MonoBehaviour
         Color selectedColor =
             colorSphere.sphereColor;
 
-        // Update the selected color.
         if (PaintUIController.Instance != null)
         {
             PaintUIController.Instance.UpdateChosenColor(
@@ -238,27 +497,57 @@ public class ScreenPaintController : MonoBehaviour
 
         Debug.Log(
             "[ScreenPaint] COLOR SELECTED: " +
-            colorSphere.name +
-            " | Color: " +
             selectedColor
         );
     }
 
-    // =============================================================
-    // UI TOUCH CHECK
-    // =============================================================
+    // START MECCHA STROKE
 
-    private bool IsTouchOverUI(
-        int touchId
+    private void StartMecchaStroke(
+        MecchaTexturePainter painter,
+        Vector2 uv
     )
+    {
+        if (painter == null)
+        {
+            return;
+        }
+
+        if (PaintUIController.Instance == null)
+        {
+            return;
+        }
+
+        currentPainter =
+            painter;
+
+        Color selectedColor =
+            PaintUIController.Instance
+                .CurrentChosenColor;
+
+        currentPainter.SetPaintColor(
+            selectedColor
+        );
+
+        currentPainter.BeginStroke(
+            uv
+        );
+
+        Debug.Log(
+            "[ScreenPaint] Started Meccha paint stroke."
+        );
+    }
+
+    // UI CHECK
+
+    private bool IsPointerOverUI()
     {
         if (EventSystem.current == null)
         {
             return false;
         }
 
-        return EventSystem.current.IsPointerOverGameObject(
-            touchId
-        );
+        return EventSystem.current
+            .IsPointerOverGameObject();
     }
 }

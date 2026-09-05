@@ -12,9 +12,12 @@ public class PaintUIController : MonoBehaviour
     [Header("Paint Mode")]
     [SerializeField] private bool startInPaintMode = false;
 
+    [Header("Initial Color")]
+    [SerializeField] private Color startingColor = Color.white;
+
     public bool IsPaintModeActive { get; private set; }
 
-    public Color CurrentChosenColor { get; private set; } = Color.white;
+    public Color CurrentChosenColor { get; private set; }
 
     private void Awake()
     {
@@ -29,14 +32,17 @@ public class PaintUIController : MonoBehaviour
 
     private void Start()
     {
+        CurrentChosenColor = startingColor;
+
         IsPaintModeActive = startInPaintMode;
 
-        CurrentChosenColor = Color.white;
-
         UpdateUI();
+
         UpdateChosenColor(CurrentChosenColor);
 
-        Debug.Log("[PaintUI] Paint UI Controller started.");
+        Debug.Log(
+            "[PaintUI] Paint UI Controller initialized."
+        );
     }
 
     public void TogglePaintMode()
@@ -59,6 +65,12 @@ public class PaintUIController : MonoBehaviour
                 IsPaintModeActive
             );
         }
+        else
+        {
+            Debug.LogWarning(
+                "[PaintUI] ColorPreviewPanel is not assigned."
+            );
+        }
     }
 
     public void UpdateChosenColor(Color newColor)
@@ -69,9 +81,15 @@ public class PaintUIController : MonoBehaviour
         {
             chosenColorBox.color = newColor;
         }
+        else
+        {
+            Debug.LogWarning(
+                "[PaintUI] ChosenColorBox is not assigned."
+            );
+        }
 
         Debug.Log(
-            "[PaintUI] Chosen color updated to: " +
+            "[PaintUI] Chosen Color = " +
             newColor
         );
     }
