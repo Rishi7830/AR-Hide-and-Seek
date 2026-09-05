@@ -136,7 +136,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
@@ -154,7 +154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BrushTipController
   currentColor: {r: 1, g: 0, b: 0, a: 1}
-  brushTipRenderer: {fileID: 0}
+  brushTipRenderer: {fileID: 208475642869024806}
   paintDistanceThreshold: 0.05
   paintableLayer:
     serializedVersion: 2

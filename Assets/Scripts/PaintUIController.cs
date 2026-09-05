@@ -7,46 +7,72 @@ public class PaintUIController : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] private GameObject colorPreviewPanel;
-    [SerializeField] private RawImage chosenColorBox; // RawImage
+    [SerializeField] private RawImage chosenColorBox;
 
-    [Header("State")]
-    public bool isPaintModeActive = false;
+    [Header("Paint Mode")]
+    [SerializeField] private bool startInPaintMode = false;
+
+    public bool IsPaintModeActive { get; private set; }
+
+    public Color CurrentChosenColor { get; private set; } = Color.white;
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+
+        Instance = this;
     }
 
     private void Start()
     {
-        if (colorPreviewPanel != null)
-        {
-            colorPreviewPanel.SetActive(false);
-        }
+        IsPaintModeActive = startInPaintMode;
+
+        CurrentChosenColor = Color.white;
+
+        UpdateUI();
+        UpdateChosenColor(CurrentChosenColor);
+
+        Debug.Log("[PaintUI] Paint UI Controller started.");
     }
 
     public void TogglePaintMode()
     {
-        isPaintModeActive = !isPaintModeActive;
+        IsPaintModeActive = !IsPaintModeActive;
 
+        UpdateUI();
+
+        Debug.Log(
+            "[PaintUI] Paint Mode = " +
+            (IsPaintModeActive ? "ON" : "OFF")
+        );
+    }
+
+    private void UpdateUI()
+    {
         if (colorPreviewPanel != null)
         {
-            colorPreviewPanel.SetActive(isPaintModeActive);
+            colorPreviewPanel.SetActive(
+                IsPaintModeActive
+            );
         }
     }
 
     public void UpdateChosenColor(Color newColor)
     {
+        CurrentChosenColor = newColor;
+
         if (chosenColorBox != null)
         {
             chosenColorBox.color = newColor;
         }
+
+        Debug.Log(
+            "[PaintUI] Chosen color updated to: " +
+            newColor
+        );
     }
 }
