@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class PaintUIController : MonoBehaviour
 {
@@ -9,15 +10,25 @@ public class PaintUIController : MonoBehaviour
     [SerializeField] private GameObject colorPreviewPanel;
     [SerializeField] private RawImage chosenColorBox;
 
+    [Header("Brush Thickness UI")]
+    [SerializeField] private Slider brushThicknessSlider;
+
+    [SerializeField] private TMP_Text brushThicknessLabel;
+
     [Header("Paint Mode")]
     [SerializeField] private bool startInPaintMode = false;
 
     [Header("Initial Color")]
     [SerializeField] private Color startingColor = Color.white;
 
+    [Header("Brush Thickness")]
+    [SerializeField] private int defaultBrushRadius = 20;
+
     public bool IsPaintModeActive { get; private set; }
 
     public Color CurrentChosenColor { get; private set; }
+
+    public int CurrentBrushRadius { get; private set; }
 
     private void Awake()
     {
@@ -32,28 +43,66 @@ public class PaintUIController : MonoBehaviour
 
     private void Start()
     {
-        CurrentChosenColor = startingColor;
+        // INITIAL STATE
 
-        IsPaintModeActive = startInPaintMode;
+        CurrentChosenColor =
+            startingColor;
+
+        IsPaintModeActive =
+            startInPaintMode;
+
+        CurrentBrushRadius =
+            defaultBrushRadius;
+
+        // CONFIGURE SLIDER
+
+        if (brushThicknessSlider != null)
+        {
+            brushThicknessSlider.minValue = 5f;
+            brushThicknessSlider.maxValue = 80f;
+            brushThicknessSlider.wholeNumbers = true;
+
+            brushThicknessSlider.value =
+                defaultBrushRadius;
+
+            brushThicknessSlider.onValueChanged
+                .AddListener(OnBrushThicknessChanged);
+        }
 
         UpdateUI();
 
-        UpdateChosenColor(CurrentChosenColor);
+        UpdateChosenColor(
+            CurrentChosenColor
+        );
+
+        UpdateBrushThicknessLabel();
 
         Debug.Log(
             "[PaintUI] Paint UI Controller initialized."
         );
+
+        Debug.Log(
+            "[PaintUI] Initial Brush Radius = " +
+            CurrentBrushRadius
+        );
     }
+
+    // PAINT MODE
 
     public void TogglePaintMode()
     {
-        IsPaintModeActive = !IsPaintModeActive;
+        IsPaintModeActive =
+            !IsPaintModeActive;
 
         UpdateUI();
 
         Debug.Log(
             "[PaintUI] Paint Mode = " +
-            (IsPaintModeActive ? "ON" : "OFF")
+            (
+                IsPaintModeActive
+                    ? "ON"
+                    : "OFF"
+            )
         );
     }
 
@@ -68,23 +117,31 @@ public class PaintUIController : MonoBehaviour
         else
         {
             Debug.LogWarning(
-                "[PaintUI] ColorPreviewPanel is not assigned."
+                "[PaintUI] ColorPreviewPanel " +
+                "is not assigned."
             );
         }
     }
 
-    public void UpdateChosenColor(Color newColor)
+    // COLOR
+
+    public void UpdateChosenColor(
+        Color newColor
+    )
     {
-        CurrentChosenColor = newColor;
+        CurrentChosenColor =
+            newColor;
 
         if (chosenColorBox != null)
         {
-            chosenColorBox.color = newColor;
+            chosenColorBox.color =
+                newColor;
         }
         else
         {
             Debug.LogWarning(
-                "[PaintUI] ChosenColorBox is not assigned."
+                "[PaintUI] ChosenColorBox " +
+                "is not assigned."
             );
         }
 
@@ -92,5 +149,37 @@ public class PaintUIController : MonoBehaviour
             "[PaintUI] Chosen Color = " +
             newColor
         );
+    }
+
+    // BRUSH THICKNESS
+
+    private void OnBrushThicknessChanged(
+        float value
+    )
+    {
+        CurrentBrushRadius =
+            Mathf.RoundToInt(value);
+
+        UpdateBrushThicknessLabel();
+
+        Debug.Log(
+            "[PaintUI] Brush Thickness = " +
+            CurrentBrushRadius
+        );
+    }
+
+    private void UpdateBrushThicknessLabel()
+    {
+        if (brushThicknessLabel != null)
+        {
+            brushThicknessLabel.text =
+                "Brush Thickness: " +
+                CurrentBrushRadius;
+        }
+    }
+
+    public int GetBrushRadius()
+    {
+        return CurrentBrushRadius;
     }
 }

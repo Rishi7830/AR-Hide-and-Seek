@@ -17,11 +17,13 @@ public class ScreenPaintController : MonoBehaviour
     [Header("Editor Testing")]
     [SerializeField] private bool allowMouseInEditor = true;
 
+    [Header("Debug")]
+    [SerializeField] private bool logRaycastHits = true;
+
     private MecchaTexturePainter currentPainter;
 
     private void Awake()
     {
-        // Enable New Input System Enhanced Touch.
         EnhancedTouchSupport.Enable();
     }
 
@@ -47,7 +49,6 @@ public class ScreenPaintController : MonoBehaviour
 
     private void Update()
     {
-
         // PAINT MODE CHECK
 
         if (PaintUIController.Instance == null)
@@ -70,9 +71,7 @@ public class ScreenPaintController : MonoBehaviour
 
         if (EnhancedTouch.activeTouches.Count > 0)
         {
-            EnhancedTouch touch =
-                EnhancedTouch.activeTouches[0];
-
+            EnhancedTouch touch = EnhancedTouch.activeTouches[0];
             ProcessTouch(touch);
 
             return;
@@ -120,44 +119,38 @@ public class ScreenPaintController : MonoBehaviour
         EnhancedTouch touch
     )
     {
-        Vector2 screenPosition =
-            touch.screenPosition;
+        Vector2 screenPosition = touch.screenPosition;
 
         switch (touch.phase)
         {
             case UnityEngine.InputSystem.TouchPhase.Began:
 
                 BeginPaint(screenPosition);
-
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Moved:
 
                 ContinuePaint(screenPosition);
-
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Stationary:
 
                 ContinuePaint(screenPosition);
-
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Ended:
 
                 EndPaint();
-
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Canceled:
 
                 EndPaint();
-
                 break;
         }
     }
 
-    // BEGIN PAINT / COLOR SELECTION
+    // BEGIN TOUCH
 
     private void BeginPaint(
         Vector2 screenPosition
@@ -168,25 +161,21 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        // IGNORE UI
-
         if (IsPointerOverUI())
         {
             return;
         }
 
-        // CREATE CAMERA RAY
-
-        Ray ray =
-            arCamera.ScreenPointToRay(
+        Ray ray = arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        if (!Physics.Raycast(
+        RaycastHit[] hits = Physics.RaycastAll(
                 ray,
-                out RaycastHit hit,
                 rayDistance
-            ))
+            );
+
+        if (hits == null || hits.Length == 0)
         {
             Debug.Log(
                 "[ScreenPaint] Nothing was hit."
@@ -195,64 +184,95 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            "[ScreenPaint] Hit: " +
-            hit.collider.name
+        // SORT HITS BY DISTANCE
+
+        System.Array.Sort(
+            hits,
+            (a, b) => a.distance.CompareTo(b.distance)
         );
 
-        // COLOR SPHERE
-
-        ColorSphere colorSphere =
-            hit.collider.GetComponent<ColorSphere>();
-
-        if (colorSphere == null)
+        if (logRaycastHits)
         {
-            colorSphere =
-                hit.collider.GetComponentInParent<ColorSphere>();
-        }
-
-        if (colorSphere != null)
-        {
-            SelectColor(
-                colorSphere
+            Debug.Log(
+                "[ScreenPaint] Number of raycast hits: " +
+                hits.Length
             );
 
-            return;
-        }
-
-        // MECCHA
-
-        MecchaTexturePainter painter =
-            hit.collider.GetComponent<
-                MecchaTexturePainter>();
-
-        if (painter == null)
-        {
-            painter =
-                hit.collider.GetComponentInParent<
-                    MecchaTexturePainter>();
-        }
-
-        if (painter != null)
-        {
-            // IMPORTANT: calculate the UV manually instead.
-
-            if (!TryCalculateHitUV(
-                    hit,
-                    out Vector2 uv
-                ))
+            foreach (RaycastHit debugHit in hits)
             {
-                Debug.LogWarning(
-                    "[ScreenPaint] Could not calculate UV " +
-                    "for Meccha hit."
+                Debug.Log(
+                    "[ScreenPaint] Hit: " +
+                    debugHit.collider.name +
+                    " | Distance: " +
+                    debugHit.distance
+                );
+            }
+        }
+
+        // SEARCH FOR COLOR SPHERE OR MECCHA
+
+        foreach (RaycastHit hit in hits)
+        {
+            // COLOR SPHERE
+
+            ColorSphere colorSphere = hit.collider.GetComponent<ColorSphere>();
+
+            if (colorSphere == null)
+            {
+                colorSphere = hit.collider.GetComponentInParent<ColorSphere>();
+            }
+
+            if (colorSphere != null)
+            {
+                SelectColor(
+                    colorSphere
                 );
 
                 return;
             }
 
-            StartMecchaStroke(
-                painter,
-                uv
+            // MECCHA
+
+            MecchaTexturePainter painter = hit.collider.GetComponent < MecchaTexturePainter>();
+
+            if (painter == null)
+            {
+                painter =
+                    hit.collider
+                        .GetComponentInParent<
+                            MecchaTexturePainter>();
+            }
+
+            if (painter != null)
+            {
+                if (
+                    !TryCalculateHitUV(
+                        hit,
+                        out Vector2 uv
+                    )
+                )
+                {
+                    Debug.LogWarning(
+                        "[ScreenPaint] " +
+                        "Could not calculate Meccha UV."
+                    );
+
+                    return;
+                }
+
+                StartMecchaStroke(
+                    painter,
+                    uv
+                );
+
+                return;
+            }
+
+            // IGNORE EVERYTHING ELSE
+
+            Debug.Log(
+                "[ScreenPaint] Ignoring non-paintable hit: " +
+                hit.collider.name
             );
         }
     }
@@ -278,191 +298,64 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        Ray ray =
-            arCamera.ScreenPointToRay(
+        Ray ray = arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        if (!Physics.Raycast(
+        RaycastHit[] hits = Physics.RaycastAll(
                 ray,
-                out RaycastHit hit,
                 rayDistance
-            ))
+            );
+
+        if (hits == null || hits.Length == 0)
         {
             return;
         }
 
-        MecchaTexturePainter painter =
-            hit.collider.GetComponent<
-                MecchaTexturePainter>();
-
-        if (painter == null)
-        {
-            painter =
-                hit.collider.GetComponentInParent<
-                    MecchaTexturePainter>();
-        }
-
-        if (painter != currentPainter)
-        {
-            return;
-        }
-
-        // MANUAL UV CALCULATION
-
-        if (!TryCalculateHitUV(
-                hit,
-                out Vector2 uv
-            ))
-        {
-            return;
-        }
-
-        currentPainter.ContinueStroke(
-            uv
+        System.Array.Sort(
+            hits,
+            (a, b) =>
+                a.distance.CompareTo(b.distance)
         );
+
+        foreach (RaycastHit hit in hits)
+        {
+            MecchaTexturePainter painter =
+                hit.collider.GetComponent<
+                    MecchaTexturePainter>();
+
+            if (painter == null)
+            {
+                painter =
+                    hit.collider
+                        .GetComponentInParent<
+                            MecchaTexturePainter>();
+            }
+
+            if (painter != currentPainter)
+            {
+                continue;
+            }
+
+            if (
+                !TryCalculateHitUV(
+                    hit,
+                    out Vector2 uv
+                )
+            )
+            {
+                return;
+            }
+
+            currentPainter.ContinueStroke(
+                uv
+            );
+
+            return;
+        }
     }
 
-    // CALCULATE UV FROM TRIANGLE + BARYCENTRIC COORDINATES
-
-    private bool TryCalculateHitUV(
-        RaycastHit hit,
-        out Vector2 uv
-    )
-    {
-        uv = Vector2.zero;
-
-        // We specifically need a MeshCollider.
-        MeshCollider meshCollider =
-            hit.collider as MeshCollider;
-
-        if (meshCollider == null)
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] Collider is not a MeshCollider."
-            );
-
-            return false;
-        }
-
-        Mesh mesh =
-            meshCollider.sharedMesh;
-
-        if (mesh == null)
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] MeshCollider has no mesh."
-            );
-
-            return false;
-        }
-
-        // CHECK TRIANGLE INDEX
-
-        int triangleIndex =
-            hit.triangleIndex;
-
-        if (triangleIndex < 0)
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] Invalid triangle index."
-            );
-
-            return false;
-        }
-
-        // Each triangle contains 3 vertex indices.
-        int triangleStart =
-            triangleIndex * 3;
-
-        if (
-            triangleStart + 2 >=
-            mesh.triangles.Length
-        )
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] Triangle index is outside mesh."
-            );
-
-            return false;
-        }
-
-        // GET TRIANGLE VERTEX INDICES
-
-        int[] triangles =
-            mesh.triangles;
-
-        int vertexIndexA =
-            triangles[triangleStart];
-
-        int vertexIndexB =
-            triangles[triangleStart + 1];
-
-        int vertexIndexC =
-            triangles[triangleStart + 2];
-
-        // GET UV0
-
-        Vector2[] uvs =
-            mesh.uv;
-
-        if (
-            uvs == null ||
-            uvs.Length == 0
-        )
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] Mesh has no UV0 coordinates."
-            );
-
-            return false;
-        }
-
-        if (
-            vertexIndexA >= uvs.Length ||
-            vertexIndexB >= uvs.Length ||
-            vertexIndexC >= uvs.Length
-        )
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] UV array does not contain " +
-                "the triangle vertices."
-            );
-
-            return false;
-        }
-
-        Vector2 uvA =
-            uvs[vertexIndexA];
-
-        Vector2 uvB =
-            uvs[vertexIndexB];
-
-        Vector2 uvC =
-            uvs[vertexIndexC];
-
-        // INTERPOLATE USING BARYCENTRIC COORDINATES
-
-        Vector3 bary =
-            hit.barycentricCoordinate;
-
-        uv =
-            uvA * bary.x +
-            uvB * bary.y +
-            uvC * bary.z;
-
-        // KEEP UV IN NORMAL RANGE
-
-        uv.x =
-            Mathf.Clamp01(uv.x);
-
-        uv.y =
-            Mathf.Clamp01(uv.y);
-
-        return true;
-    }
-
-    // END PAINT
+    // END TOUCH
 
     private void EndPaint()
     {
@@ -485,8 +378,7 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        Color selectedColor =
-            colorSphere.sphereColor;
+        Color selectedColor = colorSphere.sphereColor;
 
         if (PaintUIController.Instance != null)
         {
@@ -501,8 +393,12 @@ public class ScreenPaintController : MonoBehaviour
         );
     }
 
-    // START MECCHA STROKE
+    // private void StartMecchaStroke(
+    // MecchaTexturePainter painter,
+    // Vector2 uv
+    // )
 
+    // START MECCHA STROKE
     private void StartMecchaStroke(
         MecchaTexturePainter painter,
         Vector2 uv
@@ -518,24 +414,144 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        currentPainter =
-            painter;
+        currentPainter = painter;
 
+        // GET SELECTED COLOR
         Color selectedColor =
-            PaintUIController.Instance
-                .CurrentChosenColor;
+            PaintUIController.Instance.CurrentChosenColor;
 
+        // GET SELECTED BRUSH THICKNESS
+        int selectedBrushRadius =
+            PaintUIController.Instance.CurrentBrushRadius;
+
+        // APPLY SETTINGS TO CURRENT MECCHA
         currentPainter.SetPaintColor(
             selectedColor
         );
 
+        currentPainter.SetBrushRadius(
+            selectedBrushRadius
+        );
+
+        // START STROKE
         currentPainter.BeginStroke(
             uv
         );
 
         Debug.Log(
-            "[ScreenPaint] Started Meccha paint stroke."
+            "[ScreenPaint] Started Meccha stroke. " +
+            "Color = " +
+            selectedColor +
+            " | Brush Radius = " +
+            selectedBrushRadius
         );
+    }
+
+    // MANUAL UV CALCULATION
+
+    private bool TryCalculateHitUV(
+        RaycastHit hit,
+        out Vector2 uv
+    )
+    {
+        uv = Vector2.zero;
+
+        MeshCollider meshCollider = hit.collider as MeshCollider;
+
+        if (meshCollider == null)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "Collider is not a MeshCollider."
+            );
+
+            return false;
+        }
+
+        Mesh mesh =
+            meshCollider.sharedMesh;
+
+        if (mesh == null)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "MeshCollider has no mesh."
+            );
+
+            return false;
+        }
+
+        int triangleIndex = hit.triangleIndex;
+
+        if (triangleIndex < 0)
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "Invalid triangle index."
+            );
+
+            return false;
+        }
+
+        int[] triangles = mesh.triangles;
+
+        int triangleStart = triangleIndex * 3;
+
+        if (
+            triangleStart + 2 >= triangles.Length
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "Triangle index is outside mesh."
+            );
+
+            return false;
+        }
+
+        int vertexIndexA = triangles[triangleStart];
+        int vertexIndexB = triangles[triangleStart + 1];
+        int vertexIndexC = triangles[triangleStart + 2];
+
+        Vector2[] uvs = mesh.uv;
+
+        if (
+            uvs == null || uvs.Length == 0
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "Mesh has no UV0 coordinates."
+            );
+
+            return false;
+        }
+
+        if (
+            vertexIndexA >= uvs.Length ||
+            vertexIndexB >= uvs.Length ||
+            vertexIndexC >= uvs.Length
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "UV array does not contain " +
+                "triangle vertices."
+            );
+
+            return false;
+        }
+
+        Vector2 uvA = uvs[vertexIndexA];
+        Vector2 uvB = uvs[vertexIndexB];
+        Vector2 uvC = uvs[vertexIndexC];
+        Vector3 bary = hit.barycentricCoordinate;
+
+        uv = uvA * bary.x + uvB * bary.y + uvC * bary.z;
+        uv.x = Mathf.Clamp01(uv.x);
+        uv.y = Mathf.Clamp01(uv.y);
+
+        return true;
     }
 
     // UI CHECK

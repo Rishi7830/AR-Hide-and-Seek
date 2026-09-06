@@ -10,8 +10,7 @@ public class MecchaTexturePainter : MonoBehaviour
     [SerializeField] private int textureHeight = 1024;
 
     [Header("Brush")]
-    [Tooltip("Brush radius in texture pixels.")]
-    [SerializeField] private int brushRadius = 12;
+    [SerializeField] private int brushRadius = 20;
 
     [Header("Debug")]
     [SerializeField] private bool logPaintInfo = true;
@@ -23,7 +22,11 @@ public class MecchaTexturePainter : MonoBehaviour
 
     private Vector2? previousUV = null;
 
-    public Texture2D PaintTexture => paintTexture;
+    public Texture2D PaintTexture =>
+        paintTexture;
+
+    public int CurrentBrushRadius =>
+        brushRadius;
 
     private void Awake()
     {
@@ -66,6 +69,8 @@ public class MecchaTexturePainter : MonoBehaviour
 
             return;
         }
+
+        // Create a runtime copy of the original
         runtimeMaterial =
             new Material(
                 targetRenderer.sharedMaterial
@@ -105,8 +110,6 @@ public class MecchaTexturePainter : MonoBehaviour
         paintTexture.filterMode =
             FilterMode.Bilinear;
 
-        // CREATE WHITE CANVAS
-
         Color[] pixels =
             new Color[
                 textureWidth *
@@ -123,10 +126,7 @@ public class MecchaTexturePainter : MonoBehaviour
         }
 
         paintTexture.SetPixels(pixels);
-
         paintTexture.Apply();
-
-        // ASSIGN TO URP LIT BASE MAP
 
         runtimeMaterial.SetTexture(
             "_BaseMap",
@@ -144,20 +144,42 @@ public class MecchaTexturePainter : MonoBehaviour
 
     // COLOR
 
-    public void SetPaintColor(Color newColor)
+    public void SetPaintColor(
+        Color newColor
+    )
     {
         currentPaintColor =
             newColor;
 
         Debug.Log(
-            "[MecchaPainter] Paint color changed to: " +
+            "[MecchaPainter] Paint color = " +
             currentPaintColor
+        );
+    }
+
+    // BRUSH SIZE
+
+    public void SetBrushRadius(
+        int newRadius
+    )
+    {
+        brushRadius =
+            Mathf.Max(
+                1,
+                newRadius
+            );
+
+        Debug.Log(
+            "[MecchaPainter] Brush radius = " +
+            brushRadius
         );
     }
 
     // SINGLE DOT
 
-    public void PaintAtUV(Vector2 uv)
+    public void PaintAtUV(
+        Vector2 uv
+    )
     {
         if (paintTexture == null)
         {
@@ -165,10 +187,14 @@ public class MecchaTexturePainter : MonoBehaviour
         }
 
         uv.x =
-            Mathf.Clamp01(uv.x);
+            Mathf.Clamp01(
+                uv.x
+            );
 
         uv.y =
-            Mathf.Clamp01(uv.y);
+            Mathf.Clamp01(
+                uv.y
+            );
 
         int pixelX =
             Mathf.RoundToInt(
@@ -213,7 +239,8 @@ public class MecchaTexturePainter : MonoBehaviour
             );
 
         int radiusSquared =
-            radius * radius;
+            radius *
+            radius;
 
         int minX =
             Mathf.Max(
@@ -321,10 +348,14 @@ public class MecchaTexturePainter : MonoBehaviour
                 );
 
             uv.x =
-                Mathf.Clamp01(uv.x);
+                Mathf.Clamp01(
+                    uv.x
+                );
 
             uv.y =
-                Mathf.Clamp01(uv.y);
+                Mathf.Clamp01(
+                    uv.y
+                );
 
             int pixelX =
                 Mathf.RoundToInt(
@@ -349,7 +380,9 @@ public class MecchaTexturePainter : MonoBehaviour
 
     // STROKE
 
-    public void BeginStroke(Vector2 uv)
+    public void BeginStroke(
+        Vector2 uv
+    )
     {
         previousUV =
             uv;
@@ -359,7 +392,9 @@ public class MecchaTexturePainter : MonoBehaviour
         );
     }
 
-    public void ContinueStroke(Vector2 uv)
+    public void ContinueStroke(
+        Vector2 uv
+    )
     {
         if (!previousUV.HasValue)
         {
