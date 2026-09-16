@@ -4,10 +4,6 @@ using TMPro;
 
 public class HunterGunShootController : MonoBehaviour
 {
-    // =============================================================
-    // REFERENCES
-    // =============================================================
-
     [Header("References")]
 
     [SerializeField]
@@ -22,20 +18,12 @@ public class HunterGunShootController : MonoBehaviour
     [SerializeField]
     private GameObject ammoFinishedPanel;
 
-    // =============================================================
-    // AMMO
-    // =============================================================
-
     [Header("Ammo")]
 
     [SerializeField]
     private int maximumAmmo = 6;
 
     private int currentAmmo;
-
-    // =============================================================
-    // SHOOT SETTINGS
-    // =============================================================
 
     [Header("Shoot Settings")]
 
@@ -45,30 +33,14 @@ public class HunterGunShootController : MonoBehaviour
     [SerializeField]
     private float fireCooldown = 0.15f;
 
-    // =============================================================
-    // DEBUG
-    // =============================================================
-
     [Header("Debug")]
-
     [SerializeField]
     private bool logDebug = true;
-
-    // =============================================================
-    // INTERNAL STATE
-    // =============================================================
-
     private float nextAllowedShotTime = 0f;
-
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
-        // ---------------------------------------------------------
         // FIND PICKUP CONTROLLER
-        // ---------------------------------------------------------
 
         if (pickupController == null)
         {
@@ -77,9 +49,7 @@ public class HunterGunShootController : MonoBehaviour
                     HunterGunPickupController>();
         }
 
-        // ---------------------------------------------------------
         // CONNECT SHOOT BUTTON
-        // ---------------------------------------------------------
 
         if (shootButton != null)
         {
@@ -94,17 +64,8 @@ public class HunterGunShootController : MonoBehaviour
                 "Shoot Button is not assigned."
             );
         }
-
-        // ---------------------------------------------------------
-        // INITIALISE AMMO
-        // ---------------------------------------------------------
-
         currentAmmo =
             maximumAmmo;
-
-        // ---------------------------------------------------------
-        // HIDE AMMO FINISHED POPUP
-        // ---------------------------------------------------------
 
         if (ammoFinishedPanel != null)
         {
@@ -112,17 +73,8 @@ public class HunterGunShootController : MonoBehaviour
                 false
             );
         }
-
-        // ---------------------------------------------------------
-        // UPDATE UI
-        // ---------------------------------------------------------
-
         UpdateAmmoUI();
     }
-
-    // =============================================================
-    // ON DISABLE
-    // =============================================================
 
     private void OnDisable()
     {
@@ -134,15 +86,11 @@ public class HunterGunShootController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // SHOOT
-    // =============================================================
 
     public void Shoot()
     {
-        // ---------------------------------------------------------
         // NO AMMO
-        // ---------------------------------------------------------
 
         if (currentAmmo <= 0)
         {
@@ -159,10 +107,6 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
-        // CHECK FIRE COOLDOWN
-        // ---------------------------------------------------------
-
         if (
             Time.time <
             nextAllowedShotTime
@@ -171,25 +115,12 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
-        // CHECK PICKUP CONTROLLER
-        // ---------------------------------------------------------
-
         if (pickupController == null)
         {
             return;
         }
-
-        // ---------------------------------------------------------
-        // GET HELD GUN
-        // ---------------------------------------------------------
-
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
-
-        // ---------------------------------------------------------
-        // NO GUN
-        // ---------------------------------------------------------
 
         if (heldGun == null)
         {
@@ -204,25 +135,15 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // SET COOLDOWN
-        // ---------------------------------------------------------
 
         nextAllowedShotTime =
             Time.time +
             fireCooldown;
 
-        // ---------------------------------------------------------
-        // CONSUME AMMO
-        // ---------------------------------------------------------
-
         currentAmmo--;
 
         UpdateAmmoUI();
-
-        // ---------------------------------------------------------
-        // FIND GUN MUZZLE
-        // ---------------------------------------------------------
 
         Transform muzzle =
             FindChildRecursive(
@@ -241,9 +162,7 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // FIND MUZZLE FLASH
-        // ---------------------------------------------------------
 
         ParticleSystem muzzleFlash =
             FindParticleSystemRecursive(
@@ -262,9 +181,7 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // PLAY MUZZLE FLASH
-        // ---------------------------------------------------------
 
         muzzleFlash.Stop(
             true,
@@ -273,10 +190,6 @@ public class HunterGunShootController : MonoBehaviour
         );
 
         muzzleFlash.Play();
-
-        // ---------------------------------------------------------
-        // DEBUG
-        // ---------------------------------------------------------
 
         if (logDebug)
         {
@@ -289,20 +202,13 @@ public class HunterGunShootController : MonoBehaviour
                 maximumAmmo
             );
         }
-
-        // ---------------------------------------------------------
-        // SHOW POPUP WHEN LAST SHOT IS FIRED
-        // ---------------------------------------------------------
-
         if (currentAmmo <= 0)
         {
             ShowAmmoFinishedPopup();
         }
     }
 
-    // =============================================================
     // UPDATE AMMO UI
-    // =============================================================
 
     private void UpdateAmmoUI()
     {
@@ -317,9 +223,7 @@ public class HunterGunShootController : MonoBehaviour
             maximumAmmo;
     }
 
-    // =============================================================
     // SHOW AMMO FINISHED POPUP
-    // =============================================================
 
     private void ShowAmmoFinishedPopup()
     {
@@ -331,9 +235,7 @@ public class HunterGunShootController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // FIND TRANSFORM RECURSIVELY
-    // =============================================================
 
     private Transform FindChildRecursive(
         Transform parent,
@@ -374,9 +276,7 @@ public class HunterGunShootController : MonoBehaviour
         return null;
     }
 
-    // =============================================================
     // FIND PARTICLE SYSTEM RECURSIVELY
-    // =============================================================
 
     private ParticleSystem
         FindParticleSystemRecursive(
@@ -425,27 +325,21 @@ public class HunterGunShootController : MonoBehaviour
         return null;
     }
 
-    // =============================================================
     // GET CURRENT AMMO
-    // =============================================================
 
     public int GetCurrentAmmo()
     {
         return currentAmmo;
     }
 
-    // =============================================================
     // GET MAXIMUM AMMO
-    // =============================================================
 
     public int GetMaximumAmmo()
     {
         return maximumAmmo;
     }
 
-    // =============================================================
     // RESET AMMO
-    // =============================================================
 
     public void ResetAmmo()
     {

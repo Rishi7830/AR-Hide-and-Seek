@@ -2,10 +2,6 @@ using UnityEngine;
 
 public class HunterCrosshairController : MonoBehaviour
 {
-    // =============================================================
-    // REFERENCES
-    // =============================================================
-
     [Header("References")]
 
     [SerializeField]
@@ -17,10 +13,6 @@ public class HunterCrosshairController : MonoBehaviour
     [SerializeField]
     private HunterGunPickupController pickupController;
 
-    // =============================================================
-    // AIM
-    // =============================================================
-
     [Header("Aim")]
 
     [Tooltip(
@@ -29,10 +21,6 @@ public class HunterCrosshairController : MonoBehaviour
     )]
     [SerializeField]
     private float aimProjectionDistance = 1.0f;
-
-    // =============================================================
-    // CROSSHAIR MOVEMENT
-    // =============================================================
 
     [Header("Crosshair Movement")]
 
@@ -45,46 +33,25 @@ public class HunterCrosshairController : MonoBehaviour
     [SerializeField]
     private bool clampToScreen = true;
 
-    // =============================================================
-    // DEBUG
-    // =============================================================
-
     [Header("Debug")]
 
     [SerializeField]
     private bool logDebug = false;
 
-    // =============================================================
-    // INTERNAL STATE
-    // =============================================================
-
     private Canvas crosshairCanvas;
-
     private HunterGunPickup currentHeldGun;
-
     private Transform currentGunMuzzle;
-
     private Vector2 crosshairVelocity;
-
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
-        // ---------------------------------------------------------
-        // CAMERA
-        // ---------------------------------------------------------
-
         if (arCamera == null)
         {
             arCamera =
                 Camera.main;
         }
 
-        // ---------------------------------------------------------
         // PICKUP CONTROLLER
-        // ---------------------------------------------------------
 
         if (pickupController == null)
         {
@@ -93,9 +60,7 @@ public class HunterCrosshairController : MonoBehaviour
                     HunterGunPickupController>();
         }
 
-        // ---------------------------------------------------------
         // CROSSHAIR CANVAS
-        // ---------------------------------------------------------
 
         if (crosshair != null)
         {
@@ -104,10 +69,6 @@ public class HunterCrosshairController : MonoBehaviour
                     .GetComponentInParent<Canvas>();
         }
     }
-
-    // =============================================================
-    // UPDATE
-    // =============================================================
 
     private void Update()
     {
@@ -120,16 +81,12 @@ public class HunterCrosshairController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // GET HELD GUN
-        // ---------------------------------------------------------
 
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
 
-        // ---------------------------------------------------------
         // NO GUN
-        // ---------------------------------------------------------
 
         if (heldGun == null)
         {
@@ -139,9 +96,7 @@ public class HunterCrosshairController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // NEW GUN
-        // ---------------------------------------------------------
 
         if (currentHeldGun != heldGun)
         {
@@ -177,44 +132,29 @@ public class HunterCrosshairController : MonoBehaviour
             }
         }
 
-        // ---------------------------------------------------------
         // MUZZLE CHECK
-        // ---------------------------------------------------------
 
         if (currentGunMuzzle == null)
         {
             return;
         }
 
-        // ---------------------------------------------------------
         // GET MUZZLE POSITION
-        // ---------------------------------------------------------
 
         Vector3 muzzlePosition =
             currentGunMuzzle.position;
 
-        // ---------------------------------------------------------
         // GET MUZZLE FORWARD
-        // ---------------------------------------------------------
 
         Vector3 muzzleForward =
             currentGunMuzzle.forward.normalized;
-
-        // ---------------------------------------------------------
-        // CREATE A SECOND POINT SLIGHTLY IN FRONT
-        //
-        // This gives us the direction the muzzle is pointing
-        // without pushing the point many metres into the scene.
-        // ---------------------------------------------------------
 
         Vector3 forwardPoint =
             muzzlePosition +
             muzzleForward *
             aimProjectionDistance;
 
-        // ---------------------------------------------------------
         // PROJECT BOTH POINTS INTO SCREEN SPACE
-        // ---------------------------------------------------------
 
         Vector3 muzzleScreen =
             arCamera.WorldToScreenPoint(
@@ -226,9 +166,7 @@ public class HunterCrosshairController : MonoBehaviour
                 forwardPoint
             );
 
-        // ---------------------------------------------------------
         // MAKE SURE BOTH POINTS ARE IN FRONT
-        // ---------------------------------------------------------
 
         if (
             muzzleScreen.z <= 0f ||
@@ -238,9 +176,7 @@ public class HunterCrosshairController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // CALCULATE SCREEN-SPACE AIM DIRECTION
-        // ---------------------------------------------------------
 
         Vector2 screenDirection =
             new Vector2(
@@ -251,18 +187,13 @@ public class HunterCrosshairController : MonoBehaviour
                 muzzleScreen.y
             );
 
-        // ---------------------------------------------------------
         // IF THE DIRECTION IS TOO SMALL
-        // ---------------------------------------------------------
 
         if (
             screenDirection.sqrMagnitude
             < 0.0001f
         )
         {
-            // If the gun is pointing almost directly toward
-            // the camera, use the muzzle's screen position.
-
             UpdateCrosshairPosition(
                 new Vector2(
                     muzzleScreen.x,
@@ -275,15 +206,6 @@ public class HunterCrosshairController : MonoBehaviour
 
         screenDirection.Normalize();
 
-        // ---------------------------------------------------------
-        // CROSSHAIR DISTANCE FROM MUZZLE ON SCREEN
-        //
-        // This is deliberately controlled in SCREEN PIXELS.
-        //
-        // Therefore moving the gun left/right moves the
-        // crosshair by approximately the same screen amount.
-        // ---------------------------------------------------------
-
         float crosshairDistance = 0;
             // 250f;
 
@@ -294,10 +216,6 @@ public class HunterCrosshairController : MonoBehaviour
             ) +
             screenDirection *
             crosshairDistance;
-
-        // ---------------------------------------------------------
-        // CLAMP
-        // ---------------------------------------------------------
 
         if (clampToScreen)
         {
@@ -321,18 +239,14 @@ public class HunterCrosshairController : MonoBehaviour
                 );
         }
 
-        // ---------------------------------------------------------
         // UPDATE CROSSHAIR
-        // ---------------------------------------------------------
 
         UpdateCrosshairPosition(
             targetScreenPosition
         );
     }
 
-    // =============================================================
     // UPDATE CROSSHAIR POSITION
-    // =============================================================
 
     private void UpdateCrosshairPosition(
         Vector2 screenPosition
@@ -364,10 +278,6 @@ public class HunterCrosshairController : MonoBehaviour
                 crosshairCanvas.worldCamera;
         }
 
-        // ---------------------------------------------------------
-        // SCREEN -> CANVAS LOCAL
-        // ---------------------------------------------------------
-
         if (
             RectTransformUtility
                 .ScreenPointToLocalPointInRectangle(
@@ -378,9 +288,7 @@ public class HunterCrosshairController : MonoBehaviour
                 )
         )
         {
-            // -----------------------------------------------------
             // SMOOTH CROSSHAIR
-            // -----------------------------------------------------
 
             crosshair.anchoredPosition =
                 Vector2.SmoothDamp(
@@ -392,9 +300,7 @@ public class HunterCrosshairController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // FIND GUN MUZZLE
-    // =============================================================
 
     private Transform FindGunMuzzleRecursive(
         Transform parent
@@ -433,9 +339,7 @@ public class HunterCrosshairController : MonoBehaviour
         return null;
     }
 
-    // =============================================================
     // RESET CROSSHAIR
-    // =============================================================
 
     public void ResetCrosshairToCentre()
     {

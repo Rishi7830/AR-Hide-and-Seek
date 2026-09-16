@@ -2,10 +2,6 @@ using UnityEngine;
 
 public class HunterGunPickupController : MonoBehaviour
 {
-    // =============================================================
-    // REFERENCES
-    // =============================================================
-
     [Header("Camera")]
     [SerializeField]
     private Camera arCamera;
@@ -18,17 +14,9 @@ public class HunterGunPickupController : MonoBehaviour
     [SerializeField]
     private Transform gunHandAnchor;
 
-    // =============================================================
-    // RAYCAST
-    // =============================================================
-
     [Header("Raycast")]
     [SerializeField]
     private float rayDistance = 10f;
-
-    // =============================================================
-    // PICKUP SETTINGS
-    // =============================================================
 
     [Header("Pickup Settings")]
 
@@ -39,27 +27,14 @@ public class HunterGunPickupController : MonoBehaviour
     [SerializeField]
     private float pickupHoldTime = 0.5f;
 
-    // =============================================================
-    // DEBUG
-    // =============================================================
-
     [Header("Debug")]
     [SerializeField]
     private bool logPickup = true;
 
-    // =============================================================
-    // INTERNAL STATE
-    // =============================================================
-
     private HunterGunPickup heldGun;
-
     private HunterGunPickup hoveredGun;
-
     private float pickupTimer = 0f;
 
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
@@ -76,9 +51,7 @@ public class HunterGunPickupController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // UPDATE
-    // =============================================================
 
     private void Update()
     {
@@ -91,25 +64,19 @@ public class HunterGunPickupController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // ALREADY HOLDING A GUN
-        // ---------------------------------------------------------
 
         if (heldGun != null)
         {
             return;
         }
 
-        // ---------------------------------------------------------
         // FIND GUN UNDER INDEX FINGER
-        // ---------------------------------------------------------
 
         HunterGunPickup currentTarget =
             FindGunUnderIndexFinger();
 
-        // ---------------------------------------------------------
         // NO GUN TARGETED
-        // ---------------------------------------------------------
 
         if (currentTarget == null)
         {
@@ -120,9 +87,7 @@ public class HunterGunPickupController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // NEW GUN TARGETED
-        // ---------------------------------------------------------
 
         if (hoveredGun != currentTarget)
         {
@@ -140,16 +105,12 @@ public class HunterGunPickupController : MonoBehaviour
             }
         }
 
-        // ---------------------------------------------------------
         // HOLD-TO-PICKUP TIMER
-        // ---------------------------------------------------------
 
         pickupTimer +=
             Time.deltaTime;
 
-        // ---------------------------------------------------------
         // PICKUP AFTER HOLD TIME
-        // ---------------------------------------------------------
 
         if (
             pickupTimer >=
@@ -162,24 +123,18 @@ public class HunterGunPickupController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // FIND GUN UNDER INDEX FINGER
-    // =============================================================
 
     private HunterGunPickup
         FindGunUnderIndexFinger()
     {
-        // ---------------------------------------------------------
         // LANDMARK 8 = INDEX FINGERTIP
-        // ---------------------------------------------------------
 
         Vector2 fingertip =
             handVisualizer
                 .GetLandmarkUIPosition(8);
 
-        // ---------------------------------------------------------
         // CONVERT UI POSITION TO SCREEN POSITION
-        // ---------------------------------------------------------
 
         Vector2 screenPosition =
             new Vector2(
@@ -190,18 +145,14 @@ public class HunterGunPickupController : MonoBehaviour
                 Screen.height * 0.5f
             );
 
-        // ---------------------------------------------------------
         // CREATE CAMERA RAY
-        // ---------------------------------------------------------
 
         Ray ray =
             arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        // ---------------------------------------------------------
         // RAYCAST
-        // ---------------------------------------------------------
 
         if (
             Physics.Raycast(
@@ -222,9 +173,7 @@ public class HunterGunPickupController : MonoBehaviour
         return null;
     }
 
-    // =============================================================
     // PICKUP
-    // =============================================================
 
     private void PickupGun(
         HunterGunPickup gun
@@ -254,27 +203,21 @@ public class HunterGunPickupController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // GET HELD GUN
-    // =============================================================
 
     public HunterGunPickup GetHeldGun()
     {
         return heldGun;
     }
 
-    // =============================================================
     // GET HOVERED GUN
-    // =============================================================
 
     public HunterGunPickup GetHoveredGun()
     {
         return hoveredGun;
     }
 
-    // =============================================================
     // GET PICKUP PROGRESS
-    // =============================================================
 
     public float GetPickupProgress()
     {
@@ -292,9 +235,7 @@ public class HunterGunPickupController : MonoBehaviour
         );
     }
 
-    // =============================================================
     // DROP GUN
-    // =============================================================
 
     public void DropHeldGun()
     {

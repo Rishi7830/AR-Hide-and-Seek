@@ -2,10 +2,6 @@ using UnityEngine;
 
 public class HunterGunOrientationController : MonoBehaviour
 {
-    // =============================================================
-    // REFERENCES
-    // =============================================================
-
     [Header("References")]
 
     [SerializeField]
@@ -22,10 +18,6 @@ public class HunterGunOrientationController : MonoBehaviour
     [SerializeField]
     private Transform gunHandAnchor;
 
-    // =============================================================
-    // AIM SETTINGS
-    // =============================================================
-
     [Header("Aim")]
 
     [Tooltip(
@@ -41,39 +33,20 @@ public class HunterGunOrientationController : MonoBehaviour
     )]
     [SerializeField]
     private float smoothing = 20f;
-
-    // =============================================================
-    // INTERNAL STATE
-    // =============================================================
-
     private HunterGunPickup currentGun;
-
     private Transform currentGunMuzzle;
-
     private Vector2 filteredIndexMCP;
-
     private Vector2 filteredIndexTip;
-
     private bool handInitialized = false;
-
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
-        // ---------------------------------------------------------
-        // FIND CAMERA
-        // ---------------------------------------------------------
-
         if (arCamera == null)
         {
             arCamera = Camera.main;
         }
 
-        // ---------------------------------------------------------
         // FIND HAND VISUALIZER
-        // ---------------------------------------------------------
 
         if (handVisualizer == null)
         {
@@ -82,9 +55,7 @@ public class HunterGunOrientationController : MonoBehaviour
                     ARHandLandmarkVisualizer>();
         }
 
-        // ---------------------------------------------------------
         // FIND PICKUP CONTROLLER
-        // ---------------------------------------------------------
 
         if (pickupController == null)
         {
@@ -93,10 +64,6 @@ public class HunterGunOrientationController : MonoBehaviour
                     HunterGunPickupController>();
         }
     }
-
-    // =============================================================
-    // UPDATE
-    // =============================================================
 
     private void Update()
     {
@@ -110,16 +77,10 @@ public class HunterGunOrientationController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // FIND CURRENTLY HELD GUN
-        // ---------------------------------------------------------
 
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
-
-        // ---------------------------------------------------------
-        // NO GUN
-        // ---------------------------------------------------------
 
         if (heldGun == null)
         {
@@ -129,10 +90,6 @@ public class HunterGunOrientationController : MonoBehaviour
 
             return;
         }
-
-        // ---------------------------------------------------------
-        // NEW GUN
-        // ---------------------------------------------------------
 
         if (currentGun != heldGun)
         {
@@ -164,22 +121,12 @@ public class HunterGunOrientationController : MonoBehaviour
             );
         }
 
-        // ---------------------------------------------------------
         // SAFETY CHECK
-        // ---------------------------------------------------------
 
         if (currentGunMuzzle == null)
         {
             return;
         }
-
-        // ---------------------------------------------------------
-        // GET INDEX FINGER LANDMARKS
-        //
-        // Landmark 5 = Index MCP
-        // Landmark 8 = Index Tip
-        // ---------------------------------------------------------
-
         Vector2 indexMCP =
             handVisualizer
                 .GetLandmarkUIPosition(5);
@@ -188,9 +135,7 @@ public class HunterGunOrientationController : MonoBehaviour
             handVisualizer
                 .GetLandmarkUIPosition(8);
 
-        // ---------------------------------------------------------
         // INITIALIZE FILTER
-        // ---------------------------------------------------------
 
         if (!handInitialized)
         {
@@ -204,9 +149,7 @@ public class HunterGunOrientationController : MonoBehaviour
                 true;
         }
 
-        // ---------------------------------------------------------
         // SMOOTH LANDMARK MOVEMENT
-        // ---------------------------------------------------------
 
         float filter =
             1f -
@@ -229,9 +172,7 @@ public class HunterGunOrientationController : MonoBehaviour
                 filter
             );
 
-        // ---------------------------------------------------------
         // CALCULATE INDEX FINGER DIRECTION
-        // ---------------------------------------------------------
 
         Vector2 screenDirection =
             filteredIndexTip -
@@ -246,16 +187,6 @@ public class HunterGunOrientationController : MonoBehaviour
         }
 
         screenDirection.Normalize();
-
-        // ---------------------------------------------------------
-        // CONVERT SCREEN DIRECTION TO WORLD DIRECTION
-        //
-        // X = Camera Right
-        // Y = Camera Up
-        // Forward keeps the weapon generally pointing into
-        // the AR scene rather than sideways.
-        // ---------------------------------------------------------
-
         Vector3 screenAimDirection =
             arCamera.transform.right *
             screenDirection.x;
@@ -270,9 +201,7 @@ public class HunterGunOrientationController : MonoBehaviour
 
         screenAimDirection.Normalize();
 
-        // ---------------------------------------------------------
         // ALIGN THE ACTUAL GUN MUZZLE WITH THE AIM DIRECTION
-        // ---------------------------------------------------------
 
         Vector3 currentMuzzleDirection =
             currentGunMuzzle.forward;
@@ -297,9 +226,7 @@ public class HunterGunOrientationController : MonoBehaviour
             correction *
             gunHandAnchor.rotation;
 
-        // ---------------------------------------------------------
         // SMOOTH ROTATION
-        // ---------------------------------------------------------
 
         float rotationLerp =
             1f -
@@ -316,9 +243,7 @@ public class HunterGunOrientationController : MonoBehaviour
             );
     }
 
-    // =============================================================
     // FIND GUN MUZZLE
-    // =============================================================
 
     private Transform FindGunMuzzle(
         Transform parent
@@ -329,9 +254,7 @@ public class HunterGunOrientationController : MonoBehaviour
             return null;
         }
 
-        // ---------------------------------------------------------
         // CHECK CURRENT OBJECT
-        // ---------------------------------------------------------
 
         if (
             parent.name ==
@@ -340,11 +263,6 @@ public class HunterGunOrientationController : MonoBehaviour
         {
             return parent;
         }
-
-        // ---------------------------------------------------------
-        // SEARCH CHILDREN
-        // ---------------------------------------------------------
-
         for (
             int i = 0;
             i < parent.childCount;

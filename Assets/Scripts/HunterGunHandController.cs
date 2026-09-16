@@ -2,41 +2,21 @@ using UnityEngine;
 
 public class HunterGunHandController : MonoBehaviour
 {
-    // =============================================================
-    // CAMERA
-    // =============================================================
-
     [Header("Camera")]
     [SerializeField]
     private Camera arCamera;
-
-    // =============================================================
-    // HAND
-    // =============================================================
 
     [Header("Hand")]
     [SerializeField]
     private ARHandLandmarkVisualizer handVisualizer;
 
-    // =============================================================
-    // PICKUP CONTROLLER
-    // =============================================================
-
     [Header("Gun Pickup")]
     [SerializeField]
     private HunterGunPickupController pickupController;
 
-    // =============================================================
-    // GUN HAND ANCHOR
-    // =============================================================
-
     [Header("Gun Hand Anchor")]
     [SerializeField]
     private Transform gunHandAnchor;
-
-    // =============================================================
-    // POSITION
-    // =============================================================
 
     [Header("Position")]
 
@@ -57,10 +37,6 @@ public class HunterGunHandController : MonoBehaviour
             0f
         );
 
-    // =============================================================
-    // DEPTH
-    // =============================================================
-
     [Header("Depth")]
 
     [SerializeField]
@@ -75,10 +51,6 @@ public class HunterGunHandController : MonoBehaviour
     [SerializeField]
     private float maximumDepth = 1.50f;
 
-    // =============================================================
-    // SMOOTHING
-    // =============================================================
-
     [Header("Smoothing")]
 
     [Tooltip(
@@ -86,10 +58,6 @@ public class HunterGunHandController : MonoBehaviour
     )]
     [SerializeField]
     private float positionSmoothSpeed = 35f;
-
-    // =============================================================
-    // MUZZLE ALIGNMENT
-    // =============================================================
 
     [Header("Muzzle Alignment")]
 
@@ -100,33 +68,18 @@ public class HunterGunHandController : MonoBehaviour
     [SerializeField]
     private bool automaticallyAlignMuzzle = true;
 
-    // =============================================================
     // INTERNAL STATE
-    // =============================================================
 
     private Vector2 smoothedIndexTip;
-
     private Vector2 smoothedWrist;
-
     private Vector2 smoothedIndexMCP;
-
     private Vector2 smoothedMiddleMCP;
-
     private bool landmarksInitialized = false;
-
     private float referencePalmSize = 0f;
-
     private bool depthInitialized = false;
-
     private HunterGunPickup currentGun;
-
     private Transform currentGunMuzzle;
-
     private bool currentGunAligned = false;
-
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
@@ -151,10 +104,6 @@ public class HunterGunHandController : MonoBehaviour
         }
     }
 
-    // =============================================================
-    // UPDATE
-    // =============================================================
-
     private void Update()
     {
         if (
@@ -167,16 +116,12 @@ public class HunterGunHandController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // GET CURRENTLY HELD GUN
-        // ---------------------------------------------------------
 
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
 
-        // ---------------------------------------------------------
         // NO GUN
-        // ---------------------------------------------------------
 
         if (heldGun == null)
         {
@@ -186,10 +131,6 @@ public class HunterGunHandController : MonoBehaviour
 
             return;
         }
-
-        // ---------------------------------------------------------
-        // NEW GUN
-        // ---------------------------------------------------------
 
         if (currentGun != heldGun)
         {
@@ -209,17 +150,13 @@ public class HunterGunHandController : MonoBehaviour
             referencePalmSize = 0f;
         }
 
-        // ---------------------------------------------------------
         // GET INDEX TIP
-        // ---------------------------------------------------------
 
         Vector2 indexTip =
             handVisualizer
                 .GetLandmarkUIPosition(8);
 
-        // ---------------------------------------------------------
         // GET PALM LANDMARKS
-        // ---------------------------------------------------------
 
         Vector2 wrist =
             handVisualizer
@@ -233,10 +170,6 @@ public class HunterGunHandController : MonoBehaviour
             handVisualizer
                 .GetLandmarkUIPosition(9);
 
-        // ---------------------------------------------------------
-        // SMOOTH LANDMARKS
-        // ---------------------------------------------------------
-
         SmoothLandmarks(
             indexTip,
             wrist,
@@ -244,16 +177,12 @@ public class HunterGunHandController : MonoBehaviour
             middleMCP
         );
 
-        // ---------------------------------------------------------
         // CALCULATE DEPTH
-        // ---------------------------------------------------------
 
         float depth =
             CalculateDepth();
 
-        // ---------------------------------------------------------
         // INDEX FINGER SCREEN POSITION
-        // ---------------------------------------------------------
 
         Vector2 screenPosition =
             new Vector2(
@@ -264,27 +193,19 @@ public class HunterGunHandController : MonoBehaviour
                 Screen.height * 0.5f
             );
 
-        // ---------------------------------------------------------
         // CONVERT SCREEN POSITION TO CAMERA RAY
-        // ---------------------------------------------------------
 
         Ray ray =
             arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        // ---------------------------------------------------------
-        // TARGET WORLD POSITION
-        // ---------------------------------------------------------
-
         Vector3 targetPosition =
             ray.origin +
             ray.direction *
             depth;
 
-        // ---------------------------------------------------------
         // APPLY GRIP OFFSET
-        // ---------------------------------------------------------
 
         targetPosition +=
             arCamera.transform.right *
@@ -297,10 +218,6 @@ public class HunterGunHandController : MonoBehaviour
         targetPosition +=
             arCamera.transform.forward *
             gripOffset.z;
-
-        // ---------------------------------------------------------
-        // SMOOTH POSITION
-        // ---------------------------------------------------------
 
         float positionLerp =
             1f -
@@ -316,19 +233,10 @@ public class HunterGunHandController : MonoBehaviour
                 positionLerp
             );
 
-        // ---------------------------------------------------------
         // KEEP GUN FACING CAMERA
-        // ---------------------------------------------------------
 
         gunHandAnchor.rotation =
             arCamera.transform.rotation;
-
-        // ---------------------------------------------------------
-        // OPTIONAL MUZZLE ALIGNMENT
-        //
-        // This performs a one-time correction for downloaded
-        // gun models whose local barrel direction is unusual.
-        // ---------------------------------------------------------
 
         if (
             automaticallyAlignMuzzle &&
@@ -343,9 +251,7 @@ public class HunterGunHandController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // SMOOTH LANDMARKS
-    // =============================================================
 
     private void SmoothLandmarks(
         Vector2 indexTip,
@@ -410,9 +316,7 @@ public class HunterGunHandController : MonoBehaviour
             );
     }
 
-    // =============================================================
     // DEPTH
-    // =============================================================
 
     private float CalculateDepth()
     {
@@ -448,9 +352,7 @@ public class HunterGunHandController : MonoBehaviour
             return handDepth;
         }
 
-        // ---------------------------------------------------------
         // FIRST VALID HAND FRAME
-        // ---------------------------------------------------------
 
         if (!depthInitialized)
         {
@@ -463,9 +365,7 @@ public class HunterGunHandController : MonoBehaviour
             return handDepth;
         }
 
-        // ---------------------------------------------------------
         // RELATIVE DEPTH
-        // ---------------------------------------------------------
 
         float depthRatio =
             referencePalmSize /
@@ -478,9 +378,7 @@ public class HunterGunHandController : MonoBehaviour
                 depthSensitivity
             );
 
-        // ---------------------------------------------------------
         // LIMIT DEPTH
-        // ---------------------------------------------------------
 
         return Mathf.Clamp(
             calculatedDepth,
@@ -489,9 +387,7 @@ public class HunterGunHandController : MonoBehaviour
         );
     }
 
-    // =============================================================
     // ALIGN GUN MUZZLE
-    // =============================================================
 
     private void AlignGunMuzzle()
     {
@@ -504,11 +400,6 @@ public class HunterGunHandController : MonoBehaviour
         {
             return;
         }
-
-        // ---------------------------------------------------------
-        // FIND THE MUZZLE DIRECTION IN THE GUN'S LOCAL SPACE
-        // ---------------------------------------------------------
-
         Vector3 localMuzzleForward =
             currentGun.transform
                 .InverseTransformDirection(
@@ -525,20 +416,13 @@ public class HunterGunHandController : MonoBehaviour
 
         localMuzzleForward.Normalize();
 
-        // ---------------------------------------------------------
-        // WE WANT THE MUZZLE TO POINT ALONG +Z OF THE
-        // CAMERA'S FORWARD DIRECTION.
-        // ---------------------------------------------------------
-
         Quaternion muzzleCorrection =
             Quaternion.FromToRotation(
                 localMuzzleForward,
                 Vector3.forward
             );
 
-        // ---------------------------------------------------------
         // APPLY CAMERA ROTATION + CORRECTION
-        // ---------------------------------------------------------
 
         gunHandAnchor.rotation =
             arCamera.transform.rotation *
@@ -550,9 +434,7 @@ public class HunterGunHandController : MonoBehaviour
         );
     }
 
-    // =============================================================
     // FIND GUN MUZZLE
-    // =============================================================
 
     private Transform FindGunMuzzleRecursive(
         Transform parent
@@ -591,9 +473,7 @@ public class HunterGunHandController : MonoBehaviour
         return null;
     }
 
-    // =============================================================
     // RESET
-    // =============================================================
 
     public void ResetDepthCalibration()
     {

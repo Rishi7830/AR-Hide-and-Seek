@@ -4,34 +4,19 @@ using UnityEngine.XR.ARSubsystems;
 
 public class HunterGunManager : MonoBehaviour
 {
-    // =============================================================
-    // AR IMAGE TRACKING
-    // =============================================================
-
     [Header("AR Image Tracking")]
     [SerializeField]
     private ARTrackedImageManager trackedImageManager;
 
-    // =============================================================
     // GUN RACK
-    // =============================================================
-
     [Header("Gun Rack")]
     [SerializeField]
     private GameObject gunRackPrefab;
-
-    // =============================================================
-    // TRACKED IMAGE SETTINGS
-    // =============================================================
 
     [Header("Tracked Image Settings")]
     [SerializeField]
     private string gunSpawnImageName =
         "HunterGunSpawn";
-
-    // =============================================================
-    // PERSISTENCE
-    // =============================================================
 
     [Header("Persistence")]
 
@@ -42,17 +27,8 @@ public class HunterGunManager : MonoBehaviour
     [SerializeField]
     private bool keepSpawnedGunRackPermanently = true;
 
-    // =============================================================
-    // INTERNAL STATE
-    // =============================================================
-
     private GameObject spawnedGunRack;
-
     private bool gunRackHasBeenSpawned = false;
-
-    // =============================================================
-    // AWAKE
-    // =============================================================
 
     private void Awake()
     {
@@ -63,10 +39,6 @@ public class HunterGunManager : MonoBehaviour
                     ARTrackedImageManager>();
         }
     }
-
-    // =============================================================
-    // ENABLE
-    // =============================================================
 
     private void OnEnable()
     {
@@ -79,10 +51,6 @@ public class HunterGunManager : MonoBehaviour
         }
     }
 
-    // =============================================================
-    // DISABLE
-    // =============================================================
-
     private void OnDisable()
     {
         if (trackedImageManager != null)
@@ -94,18 +62,10 @@ public class HunterGunManager : MonoBehaviour
         }
     }
 
-    // =============================================================
-    // TRACKED IMAGE CHANGES
-    // =============================================================
-
     private void OnTrackedImagesChanged(
         ARTrackablesChangedEventArgs<ARTrackedImage> args
     )
     {
-        // ---------------------------------------------------------
-        // ADDED
-        // ---------------------------------------------------------
-
         foreach (
             ARTrackedImage trackedImage
             in args.added
@@ -115,10 +75,6 @@ public class HunterGunManager : MonoBehaviour
                 trackedImage
             );
         }
-
-        // ---------------------------------------------------------
-        // UPDATED
-        // ---------------------------------------------------------
 
         foreach (
             ARTrackedImage trackedImage
@@ -130,15 +86,6 @@ public class HunterGunManager : MonoBehaviour
             );
         }
 
-        // ---------------------------------------------------------
-        // REMOVED
-        //
-        // DO NOTHING.
-        //
-        // The gun rack has already been detached from the tracked
-        // image and therefore remains in AR world space.
-        // ---------------------------------------------------------
-
         foreach (
             var removedEntry
             in args.removed
@@ -148,9 +95,7 @@ public class HunterGunManager : MonoBehaviour
         }
     }
 
-    // =============================================================
     // HANDLE TRACKED IMAGE
-    // =============================================================
 
     private void HandleTrackedImage(
         ARTrackedImage trackedImage
@@ -161,10 +106,6 @@ public class HunterGunManager : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
-        // CHECK THAT THIS IS OUR HUNTER IMAGE
-        // ---------------------------------------------------------
-
         if (
             trackedImage.referenceImage.name
             != gunSpawnImageName
@@ -173,18 +114,14 @@ public class HunterGunManager : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // STOP IF THE GUN RACK ALREADY EXISTS
-        // ---------------------------------------------------------
 
         if (gunRackHasBeenSpawned)
         {
             return;
         }
 
-        // ---------------------------------------------------------
         // WAIT UNTIL IMAGE IS ACTUALLY TRACKED
-        // ---------------------------------------------------------
 
         if (
             trackedImage.trackingState
@@ -194,9 +131,7 @@ public class HunterGunManager : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // CHECK PREFAB
-        // ---------------------------------------------------------
 
         if (gunRackPrefab == null)
         {
@@ -208,9 +143,7 @@ public class HunterGunManager : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // SPAWN DIRECTLY IN WORLD SPACE
-        // ---------------------------------------------------------
 
         spawnedGunRack =
             Instantiate(
@@ -219,16 +152,8 @@ public class HunterGunManager : MonoBehaviour
                 trackedImage.transform.rotation
             );
 
-        // ---------------------------------------------------------
-        // RESET SCALE
-        // ---------------------------------------------------------
-
         spawnedGunRack.transform.localScale =
             Vector3.one;
-
-        // ---------------------------------------------------------
-        // MARK AS SPAWNED
-        // ---------------------------------------------------------
 
         gunRackHasBeenSpawned =
             true;
@@ -248,9 +173,7 @@ public class HunterGunManager : MonoBehaviour
             spawnedGunRack.transform.rotation
         );
 
-        // ---------------------------------------------------------
         // DETACH FROM TRACKED IMAGE
-        // ---------------------------------------------------------
 
         if (keepSpawnedGunRackPermanently)
         {
@@ -258,9 +181,7 @@ public class HunterGunManager : MonoBehaviour
         }
     }
 
-    // =============================================================
     // DETACH GUN RACK
-    // =============================================================
 
     private void DetachGunRackFromTrackedImage()
     {
@@ -268,10 +189,6 @@ public class HunterGunManager : MonoBehaviour
         {
             return;
         }
-
-        // Remove parent while preserving the current
-        // world position, rotation and scale.
-
         spawnedGunRack.transform.SetParent(
             null,
             true
@@ -289,27 +206,21 @@ public class HunterGunManager : MonoBehaviour
         );
     }
 
-    // =============================================================
     // GET SPAWNED GUN RACK
-    // =============================================================
 
     public GameObject GetSpawnedGunRack()
     {
         return spawnedGunRack;
     }
 
-    // =============================================================
     // CHECK IF GUN RACK EXISTS
-    // =============================================================
 
     public bool HasSpawnedGunRack()
     {
         return gunRackHasBeenSpawned;
     }
 
-    // =============================================================
     // RESET GUN RACK
-    // =============================================================
 
     public void ResetGunRack()
     {
