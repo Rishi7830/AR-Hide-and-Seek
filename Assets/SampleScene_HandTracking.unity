@@ -3210,7 +3210,7 @@ MonoBehaviour:
   arCamera: {fileID: 331264289}
   crosshair: {fileID: 1058633694}
   pickupController: {fileID: 325190818}
-  rayDistance: 50
+  aimDistance: 10
   smoothSpeed: 20
   clampToScreen: 1
   logDebug: 1
@@ -7882,6 +7882,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1383724292}
   m_CullTransparentMesh: 1
+--- !u!1 &1390581771
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1390581773}
+  - component: {fileID: 1390581772}
+  m_Layer: 0
+  m_Name: HunterGunOrientationController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1390581772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1390581771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a06a80a1b4f57f42820b9ad1b9e9ffd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HunterGunOrientationController
+  arCamera: {fileID: 331264289}
+  handVisualizer: {fileID: 1713616073}
+  pickupController: {fileID: 325190818}
+  gunHandAnchor: {fileID: 1541651696}
+  aimStrength: 1
+  smoothing: 20
+--- !u!4 &1390581773
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1390581771}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1401809160
 GameObject:
   m_ObjectHideFlags: 0
@@ -11485,16 +11535,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HunterGunHandController
   arCamera: {fileID: 331264289}
   handVisualizer: {fileID: 1713616073}
+  pickupController: {fileID: 0}
   gunHandAnchor: {fileID: 1541651696}
-  baseHandDepth: 0.5
-  depthSensitivity: 1.5
-  minimumDepth: 0.25
-  maximumDepth: 2
-  positionSmoothSpeed: 15
-  rotationSmoothSpeed: 15
-  gripPositionOffset: {x: 0, y: -0.05, z: 0}
-  gripRotationOffset: 180
-  autoCalibrateDepth: 1
+  handDepth: 0.5
+  gripOffset: {x: 0, y: -0.05, z: 0}
+  useDepthEstimation: 1
+  depthSensitivity: 1.2
+  minimumDepth: 0.3
+  maximumDepth: 1.5
+  positionSmoothSpeed: 35
+  automaticallyAlignMuzzle: 1
 --- !u!4 &2007437484
 Transform:
   m_ObjectHideFlags: 0
@@ -12802,6 +12852,7 @@ SceneRoots:
   - {fileID: 263564813}
   - {fileID: 2007437484}
   - {fileID: 325190819}
+  - {fileID: 1390581773}
   - {fileID: 358959655}
   - {fileID: 2105981188}
   - {fileID: 1291069033}
