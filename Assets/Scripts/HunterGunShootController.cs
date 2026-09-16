@@ -27,21 +27,33 @@ public class HunterGunShootController : MonoBehaviour
 
     [Header("Shoot Settings")]
 
-    [Tooltip(
-        "Minimum time between shots."
-    )]
     [SerializeField]
     private float fireCooldown = 0.15f;
 
+    [Header("Muzzle Flash")]
+
+    [Tooltip(
+        "If enabled, the muzzle flash is forcibly positioned " +
+        "at the gun muzzle every time the gun fires."
+    )]
+    [SerializeField]
+    private bool forceMuzzleFlashPosition = true;
+
+    [Tooltip(
+        "Additional offset from the GunMuzzle position."
+    )]
+    [SerializeField]
+    private Vector3 muzzleFlashOffset =
+        Vector3.zero;
+
     [Header("Debug")]
+
     [SerializeField]
     private bool logDebug = true;
     private float nextAllowedShotTime = 0f;
 
     private void Start()
     {
-        // FIND PICKUP CONTROLLER
-
         if (pickupController == null)
         {
             pickupController =
@@ -64,9 +76,11 @@ public class HunterGunShootController : MonoBehaviour
                 "Shoot Button is not assigned."
             );
         }
+
+        // INITIALISE AMMO
+
         currentAmmo =
             maximumAmmo;
-
         if (ammoFinishedPanel != null)
         {
             ammoFinishedPanel.SetActive(
@@ -86,11 +100,9 @@ public class HunterGunShootController : MonoBehaviour
         }
     }
 
-    // SHOOT
-
     public void Shoot()
     {
-        // NO AMMO
+        // CHECK AMMO
 
         if (currentAmmo <= 0)
         {
@@ -107,6 +119,8 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
+        // CHECK COOLDOWN
+
         if (
             Time.time <
             nextAllowedShotTime
@@ -115,10 +129,15 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
+        // CHECK PICKUP CONTROLLER
+
         if (pickupController == null)
         {
             return;
         }
+
+        // GET CURRENT GUN
+
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
 
@@ -128,14 +147,12 @@ public class HunterGunShootController : MonoBehaviour
             {
                 Debug.Log(
                     "[HunterShoot] " +
-                    "Shoot pressed, but no gun is held."
+                    "No gun is currently held."
                 );
             }
 
             return;
         }
-
-        // SET COOLDOWN
 
         nextAllowedShotTime =
             Time.time +
@@ -144,6 +161,8 @@ public class HunterGunShootController : MonoBehaviour
         currentAmmo--;
 
         UpdateAmmoUI();
+
+        // FIND GUN MUZZLE
 
         Transform muzzle =
             FindChildRecursive(
@@ -181,6 +200,25 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
+        // FORCE MUZZLE FLASH POSITION
+
+        if (forceMuzzleFlashPosition)
+        {
+            Transform flashTransform =
+                muzzleFlash.transform;
+
+            // POSITION
+
+            flashTransform.position =
+                muzzle.position +
+                muzzle.TransformDirection(
+                    muzzleFlashOffset
+                );
+
+            flashTransform.rotation =
+                muzzle.rotation;
+        }
+
         // PLAY MUZZLE FLASH
 
         muzzleFlash.Stop(
@@ -195,13 +233,20 @@ public class HunterGunShootController : MonoBehaviour
         {
             Debug.Log(
                 "[HunterShoot] Fired " +
-                heldGun.name +
-                " | Ammo remaining: " +
-                currentAmmo +
-                "/" +
-                maximumAmmo
+                heldGun.name
+            );
+
+            Debug.Log(
+                "[HunterShoot] Muzzle position = " +
+                muzzle.position
+            );
+
+            Debug.Log(
+                "[HunterShoot] Flash position = " +
+                muzzleFlash.transform.position
             );
         }
+
         if (currentAmmo <= 0)
         {
             ShowAmmoFinishedPopup();
@@ -222,8 +267,6 @@ public class HunterGunShootController : MonoBehaviour
             "/" +
             maximumAmmo;
     }
-
-    // SHOW AMMO FINISHED POPUP
 
     private void ShowAmmoFinishedPopup()
     {
