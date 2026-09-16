@@ -14,6 +14,9 @@ public class MainMenuController : MonoBehaviour
     public GameObject hunterGamePanel; // Optional placeholder for future implementation
     // public GameObject seekerGamePanel;
 
+    [Header("Hunter Hand Tracking")]
+    public GameObject handTrackingCanvas;
+
     [Header("Scene Management Names (Option B)")]
     public string hiderSceneName = "HiderScene";
     public string hunterSceneName = "HunterScene";
@@ -38,6 +41,8 @@ public class MainMenuController : MonoBehaviour
             if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
             if (hiderGamePanel != null) hiderGamePanel.SetActive(false);
             if (hunterGamePanel != null) hunterGamePanel.SetActive(false);
+            if (handTrackingCanvas != null)
+                handTrackingCanvas.SetActive(false);
         }
     }
 
@@ -47,6 +52,8 @@ public class MainMenuController : MonoBehaviour
         {
             if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
             if (hiderGamePanel != null) hiderGamePanel.SetActive(true);
+            if (handTrackingCanvas != null)
+                handTrackingCanvas.SetActive(false);
         }
         else
         {
@@ -58,20 +65,31 @@ public class MainMenuController : MonoBehaviour
     {
         if (usePanelSwapping)
         {
-            // Hide main menu
-            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-            // Hide Hider panel
-            if (hiderGamePanel != null) hiderGamePanel.SetActive(false);
-            // Show Hunter panel
-            if (hunterGamePanel != null) hunterGamePanel.SetActive(true);
+            if (mainMenuPanel != null)
+                mainMenuPanel.SetActive(false);
 
-            Debug.Log("Hunter mode selected.");
+            if (hiderGamePanel != null)
+                hiderGamePanel.SetActive(false);
+
+            if (hunterGamePanel != null)
+                hunterGamePanel.SetActive(true);
+
+            // Hunter DOES use visible hand landmarks.
+            if (handTrackingCanvas != null)
+                handTrackingCanvas.SetActive(true);
+
+            Debug.Log(
+                "Hunter mode selected. " +
+                "Hand landmarks enabled."
+            );
         }
         else
         {
             if (!string.IsNullOrEmpty(hunterSceneName))
             {
-                SceneManager.LoadScene(hunterSceneName);
+                SceneManager.LoadScene(
+                    hunterSceneName
+                );
             }
         }
     }
@@ -84,6 +102,8 @@ public class MainMenuController : MonoBehaviour
             if (hiderGamePanel != null) hiderGamePanel.SetActive(false);
             if (hunterGamePanel != null) hunterGamePanel.SetActive(false);
             if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+            if (handTrackingCanvas != null)
+                handTrackingCanvas.SetActive(false);
         }
         else
         {

@@ -27,3 +27,13 @@ MonoBehaviour:
     m_SpecifySize: 1
     m_Name: PaletteTarget_v
     m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 4817997652513317884
+      m_GuidHigh: 11007092129999054759
+    m_SerializedTextureGuid:
+      m_GuidLow: 12930984201950608967
+      m_GuidHigh: 14797709654460224331
+    m_Size: {x: 0.1, y: 0.1}
+    m_SpecifySize: 1
+    m_Name: HunterGunSpawn
+    m_Texture: {fileID: 0}
