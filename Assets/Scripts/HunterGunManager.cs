@@ -26,15 +26,29 @@ public class HunterGunManager : MonoBehaviour
 
     [Header("Tracked Image Settings")]
     [SerializeField]
-    private string gunSpawnImageName = "HunterGunSpawn";
+    private string gunSpawnImageName =
+        "HunterGunSpawn";
 
     // =============================================================
-    // INTERNAL VARIABLES
+    // PERSISTENCE
+    // =============================================================
+
+    [Header("Persistence")]
+
+    [Tooltip(
+        "Once the gun rack is spawned, it remains in the AR world " +
+        "even when the Hunter image is no longer tracked."
+    )]
+    [SerializeField]
+    private bool keepSpawnedGunRackPermanently = true;
+
+    // =============================================================
+    // INTERNAL STATE
     // =============================================================
 
     private GameObject spawnedGunRack;
 
-    private ARTrackedImage currentTrackedImage;
+    private bool gunRackHasBeenSpawned = false;
 
     // =============================================================
     // AWAKE
@@ -42,13 +56,11 @@ public class HunterGunManager : MonoBehaviour
 
     private void Awake()
     {
-        // Find the ARTrackedImageManager automatically
-        // if it has not been assigned in the Inspector.
-
         if (trackedImageManager == null)
         {
             trackedImageManager =
-                FindFirstObjectByType<ARTrackedImageManager>();
+                FindFirstObjectByType<
+                    ARTrackedImageManager>();
         }
     }
 
@@ -60,8 +72,6 @@ public class HunterGunManager : MonoBehaviour
     {
         if (trackedImageManager != null)
         {
-            // AR Foundation 6:
-            // trackablesChanged is a UnityEvent.
             trackedImageManager.trackablesChanged
                 .AddListener(
                     OnTrackedImagesChanged
@@ -77,8 +87,6 @@ public class HunterGunManager : MonoBehaviour
     {
         if (trackedImageManager != null)
         {
-            // Remove the listener when this object is disabled.
-
             trackedImageManager.trackablesChanged
                 .RemoveListener(
                     OnTrackedImagesChanged
@@ -125,11 +133,10 @@ public class HunterGunManager : MonoBehaviour
         // ---------------------------------------------------------
         // REMOVED
         //
-        // In AR Foundation 6, removed contains:
+        // DO NOTHING.
         //
-        // KeyValuePair<TrackableId, ARTrackedImage>
-        //
-        // rather than ARTrackedImage directly.
+        // The gun rack has already been detached from the tracked
+        // image and therefore remains in AR world space.
         // ---------------------------------------------------------
 
         foreach (
@@ -137,19 +144,7 @@ public class HunterGunManager : MonoBehaviour
             in args.removed
         )
         {
-            ARTrackedImage removedImage =
-                removedEntry.Value;
-
-            if (
-                currentTrackedImage != null &&
-                removedImage == currentTrackedImage
-            )
-            {
-                HideGunRack();
-
-                currentTrackedImage =
-                    null;
-            }
+            // Intentionally empty.
         }
     }
 
@@ -167,112 +162,131 @@ public class HunterGunManager : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // CHECK IMAGE NAME
+        // CHECK THAT THIS IS OUR HUNTER IMAGE
         // ---------------------------------------------------------
 
         if (
-            trackedImage.referenceImage.name !=
-            gunSpawnImageName
+            trackedImage.referenceImage.name
+            != gunSpawnImageName
         )
         {
             return;
         }
 
-        // Remember the current tracked image.
-
-        currentTrackedImage =
-            trackedImage;
-
         // ---------------------------------------------------------
-        // CREATE GUN RACK ON FIRST DETECTION
+        // STOP IF THE GUN RACK ALREADY EXISTS
         // ---------------------------------------------------------
 
-        if (spawnedGunRack == null)
+        if (gunRackHasBeenSpawned)
         {
-            if (gunRackPrefab == null)
-            {
-                Debug.LogError(
-                    "[HunterGunManager] " +
-                    "Gun Rack Prefab is not assigned."
-                );
-
-                return;
-            }
-
-            spawnedGunRack =
-                Instantiate(
-                    gunRackPrefab
-                );
-
-            // Parent it to the tracked image.
-
-            spawnedGunRack.transform.SetParent(
-                trackedImage.transform,
-                false
-            );
-
-            // Match tracked-image origin.
-
-            spawnedGunRack.transform.localPosition =
-                Vector3.zero;
-
-            spawnedGunRack.transform.localRotation =
-                Quaternion.identity;
-
-            spawnedGunRack.transform.localScale =
-                Vector3.one;
-        }
-        else
-        {
-            // Make sure the existing rack follows
-            // the currently tracked image.
-
-            spawnedGunRack.transform.SetParent(
-                trackedImage.transform,
-                false
-            );
-
-            spawnedGunRack.transform.localPosition =
-                Vector3.zero;
-
-            spawnedGunRack.transform.localRotation =
-                Quaternion.identity;
-
-            spawnedGunRack.transform.localScale =
-                Vector3.one;
+            return;
         }
 
         // ---------------------------------------------------------
-        // CHECK TRACKING STATE
+        // WAIT UNTIL IMAGE IS ACTUALLY TRACKED
         // ---------------------------------------------------------
 
         if (
-            trackedImage.trackingState ==
-            TrackingState.Tracking
+            trackedImage.trackingState
+            != TrackingState.Tracking
         )
         {
-            spawnedGunRack.SetActive(
-                true
-            );
+            return;
         }
-        else
+
+        // ---------------------------------------------------------
+        // CHECK PREFAB
+        // ---------------------------------------------------------
+
+        if (gunRackPrefab == null)
         {
-            HideGunRack();
+            Debug.LogError(
+                "[HunterGunManager] " +
+                "Gun Rack Prefab has not been assigned."
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // SPAWN DIRECTLY IN WORLD SPACE
+        // ---------------------------------------------------------
+
+        spawnedGunRack =
+            Instantiate(
+                gunRackPrefab,
+                trackedImage.transform.position,
+                trackedImage.transform.rotation
+            );
+
+        // ---------------------------------------------------------
+        // RESET SCALE
+        // ---------------------------------------------------------
+
+        spawnedGunRack.transform.localScale =
+            Vector3.one;
+
+        // ---------------------------------------------------------
+        // MARK AS SPAWNED
+        // ---------------------------------------------------------
+
+        gunRackHasBeenSpawned =
+            true;
+
+        Debug.Log(
+            "[HunterGunManager] " +
+            "Hunter Gun Rack spawned."
+        );
+
+        Debug.Log(
+            "[HunterGunManager] Spawn Position: " +
+            spawnedGunRack.transform.position
+        );
+
+        Debug.Log(
+            "[HunterGunManager] Spawn Rotation: " +
+            spawnedGunRack.transform.rotation
+        );
+
+        // ---------------------------------------------------------
+        // DETACH FROM TRACKED IMAGE
+        // ---------------------------------------------------------
+
+        if (keepSpawnedGunRackPermanently)
+        {
+            DetachGunRackFromTrackedImage();
         }
     }
 
     // =============================================================
-    // HIDE GUN RACK
+    // DETACH GUN RACK
     // =============================================================
 
-    private void HideGunRack()
+    private void DetachGunRackFromTrackedImage()
     {
-        if (spawnedGunRack != null)
+        if (spawnedGunRack == null)
         {
-            spawnedGunRack.SetActive(
-                false
-            );
+            return;
         }
+
+        // Remove parent while preserving the current
+        // world position, rotation and scale.
+
+        spawnedGunRack.transform.SetParent(
+            null,
+            true
+        );
+
+        Debug.Log(
+            "[HunterGunManager] " +
+            "Gun Rack detached from ARTrackedImage."
+        );
+
+        Debug.Log(
+            "[HunterGunManager] " +
+            "Gun Rack will remain permanently " +
+            "placed in the AR world."
+        );
     }
 
     // =============================================================
@@ -282,5 +296,39 @@ public class HunterGunManager : MonoBehaviour
     public GameObject GetSpawnedGunRack()
     {
         return spawnedGunRack;
+    }
+
+    // =============================================================
+    // CHECK IF GUN RACK EXISTS
+    // =============================================================
+
+    public bool HasSpawnedGunRack()
+    {
+        return gunRackHasBeenSpawned;
+    }
+
+    // =============================================================
+    // RESET GUN RACK
+    // =============================================================
+
+    public void ResetGunRack()
+    {
+        if (spawnedGunRack != null)
+        {
+            Destroy(
+                spawnedGunRack
+            );
+
+            spawnedGunRack =
+                null;
+        }
+
+        gunRackHasBeenSpawned =
+            false;
+
+        Debug.Log(
+            "[HunterGunManager] " +
+            "Gun Rack reset."
+        );
     }
 }

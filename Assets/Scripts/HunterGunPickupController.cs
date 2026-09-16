@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class HunterGunPickupController : MonoBehaviour
 {
+    // =============================================================
+    // REFERENCES
+    // =============================================================
+
     [Header("Camera")]
     [SerializeField]
     private Camera arCamera;
@@ -14,18 +18,54 @@ public class HunterGunPickupController : MonoBehaviour
     [SerializeField]
     private Transform gunHandAnchor;
 
+    // =============================================================
+    // RAYCAST
+    // =============================================================
+
     [Header("Raycast")]
     [SerializeField]
     private float rayDistance = 10f;
 
+    // =============================================================
+    // PICKUP SETTINGS
+    // =============================================================
+
+    [Header("Pickup Settings")]
+
+    [Tooltip(
+        "How long the player must continuously point at a gun " +
+        "before it is picked up."
+    )]
+    [SerializeField]
+    private float pickupHoldTime = 0.5f;
+
+    // =============================================================
+    // DEBUG
+    // =============================================================
+
+    [Header("Debug")]
+    [SerializeField]
+    private bool logPickup = true;
+
+    // =============================================================
+    // INTERNAL STATE
+    // =============================================================
+
     private HunterGunPickup heldGun;
+
+    private HunterGunPickup hoveredGun;
+
+    private float pickupTimer = 0f;
+
+    // =============================================================
+    // START
+    // =============================================================
 
     private void Start()
     {
         if (arCamera == null)
         {
-            arCamera =
-                Camera.main;
+            arCamera = Camera.main;
         }
 
         if (handVisualizer == null)
@@ -35,6 +75,10 @@ public class HunterGunPickupController : MonoBehaviour
                     ARHandLandmarkVisualizer>();
         }
     }
+
+    // =============================================================
+    // UPDATE
+    // =============================================================
 
     private void Update()
     {
@@ -47,9 +91,95 @@ public class HunterGunPickupController : MonoBehaviour
             return;
         }
 
+        // ---------------------------------------------------------
+        // ALREADY HOLDING A GUN
+        // ---------------------------------------------------------
+
+        if (heldGun != null)
+        {
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // FIND GUN UNDER INDEX FINGER
+        // ---------------------------------------------------------
+
+        HunterGunPickup currentTarget =
+            FindGunUnderIndexFinger();
+
+        // ---------------------------------------------------------
+        // NO GUN TARGETED
+        // ---------------------------------------------------------
+
+        if (currentTarget == null)
+        {
+            hoveredGun = null;
+
+            pickupTimer = 0f;
+
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // NEW GUN TARGETED
+        // ---------------------------------------------------------
+
+        if (hoveredGun != currentTarget)
+        {
+            hoveredGun =
+                currentTarget;
+
+            pickupTimer = 0f;
+
+            if (logPickup)
+            {
+                Debug.Log(
+                    "[Hunter] Pointing at gun: " +
+                    hoveredGun.name
+                );
+            }
+        }
+
+        // ---------------------------------------------------------
+        // HOLD-TO-PICKUP TIMER
+        // ---------------------------------------------------------
+
+        pickupTimer +=
+            Time.deltaTime;
+
+        // ---------------------------------------------------------
+        // PICKUP AFTER HOLD TIME
+        // ---------------------------------------------------------
+
+        if (
+            pickupTimer >=
+            pickupHoldTime
+        )
+        {
+            PickupGun(
+                hoveredGun
+            );
+        }
+    }
+
+    // =============================================================
+    // FIND GUN UNDER INDEX FINGER
+    // =============================================================
+
+    private HunterGunPickup
+        FindGunUnderIndexFinger()
+    {
+        // ---------------------------------------------------------
+        // LANDMARK 8 = INDEX FINGERTIP
+        // ---------------------------------------------------------
+
         Vector2 fingertip =
             handVisualizer
                 .GetLandmarkUIPosition(8);
+
+        // ---------------------------------------------------------
+        // CONVERT UI POSITION TO SCREEN POSITION
+        // ---------------------------------------------------------
 
         Vector2 screenPosition =
             new Vector2(
@@ -60,22 +190,17 @@ public class HunterGunPickupController : MonoBehaviour
                 Screen.height * 0.5f
             );
 
+        // ---------------------------------------------------------
+        // CREATE CAMERA RAY
+        // ---------------------------------------------------------
+
         Ray ray =
             arCamera.ScreenPointToRay(
                 screenPosition
             );
 
         // ---------------------------------------------------------
-        // IF WE ALREADY HOLD A GUN
-        // ---------------------------------------------------------
-
-        if (heldGun != null)
-        {
-            return;
-        }
-
-        // ---------------------------------------------------------
-        // LOOK FOR GUN
+        // RAYCAST
         // ---------------------------------------------------------
 
         if (
@@ -91,26 +216,105 @@ public class HunterGunPickupController : MonoBehaviour
                     .GetComponentInParent<
                         HunterGunPickup>();
 
-            if (gun != null)
-            {
-                // For the prototype, immediately pick it up
-                // when the fingertip ray hits it.
-                heldGun = gun;
+            return gun;
+        }
 
-                gun.Pickup(
-                    gunHandAnchor
-                );
+        return null;
+    }
 
-                Debug.Log(
-                    "[Hunter] Gun selected: " +
-                    gun.name
-                );
-            }
+    // =============================================================
+    // PICKUP
+    // =============================================================
+
+    private void PickupGun(
+        HunterGunPickup gun
+    )
+    {
+        if (gun == null)
+        {
+            return;
+        }
+
+        heldGun =
+            gun;
+
+        pickupTimer =
+            0f;
+
+        gun.Pickup(
+            gunHandAnchor
+        );
+
+        if (logPickup)
+        {
+            Debug.Log(
+                "[Hunter] Gun picked up: " +
+                gun.name
+            );
         }
     }
+
+    // =============================================================
+    // GET HELD GUN
+    // =============================================================
 
     public HunterGunPickup GetHeldGun()
     {
         return heldGun;
+    }
+
+    // =============================================================
+    // GET HOVERED GUN
+    // =============================================================
+
+    public HunterGunPickup GetHoveredGun()
+    {
+        return hoveredGun;
+    }
+
+    // =============================================================
+    // GET PICKUP PROGRESS
+    // =============================================================
+
+    public float GetPickupProgress()
+    {
+        if (
+            hoveredGun == null ||
+            pickupHoldTime <= 0f
+        )
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(
+            pickupTimer /
+            pickupHoldTime
+        );
+    }
+
+    // =============================================================
+    // DROP GUN
+    // =============================================================
+
+    public void DropHeldGun()
+    {
+        if (heldGun == null)
+        {
+            return;
+        }
+
+        heldGun.Drop();
+
+        if (logPickup)
+        {
+            Debug.Log(
+                "[Hunter] Gun dropped: " +
+                heldGun.name
+            );
+        }
+
+        heldGun = null;
+        hoveredGun = null;
+        pickupTimer = 0f;
     }
 }

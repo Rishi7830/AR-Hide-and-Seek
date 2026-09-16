@@ -1515,6 +1515,7 @@ MonoBehaviour:
   hiderGamePanel: {fileID: 2099970465}
   hunterGamePanel: {fileID: 2105981184}
   handTrackingCanvas: {fileID: 673310402}
+  arPlaneManager: {fileID: 151853166}
   hiderSceneName: HiderScene
   hunterSceneName: HunterScene
   hiderButton: {fileID: 2000091102}
@@ -2157,6 +2158,7 @@ MonoBehaviour:
   trackedImageManager: {fileID: 1976924005}
   gunRackPrefab: {fileID: 1425286650308476074, guid: f02afadc92247664d8feadb3e01d32a3, type: 3}
   gunSpawnImageName: HunterGunSpawn
+  keepSpawnedGunRackPermanently: 1
 --- !u!4 &263564813
 Transform:
   m_ObjectHideFlags: 0
@@ -2928,6 +2930,8 @@ MonoBehaviour:
   handVisualizer: {fileID: 1713616073}
   gunHandAnchor: {fileID: 1541651696}
   rayDistance: 10
+  pickupHoldTime: 4
+  logPickup: 1
 --- !u!4 &325190819
 Transform:
   m_ObjectHideFlags: 0
@@ -3207,8 +3211,9 @@ MonoBehaviour:
   crosshair: {fileID: 1058633694}
   pickupController: {fileID: 325190818}
   rayDistance: 50
-  smoothSpeed: 15
-  hideCrosshairWithoutGun: 0
+  smoothSpeed: 20
+  clampToScreen: 1
+  logDebug: 1
 --- !u!4 &358959655
 Transform:
   m_ObjectHideFlags: 0
@@ -11481,7 +11486,15 @@ MonoBehaviour:
   arCamera: {fileID: 331264289}
   handVisualizer: {fileID: 1713616073}
   gunHandAnchor: {fileID: 1541651696}
-  handDepth: 0.5
+  baseHandDepth: 0.5
+  depthSensitivity: 1.5
+  minimumDepth: 0.25
+  maximumDepth: 2
+  positionSmoothSpeed: 15
+  rotationSmoothSpeed: 15
+  gripPositionOffset: {x: 0, y: -0.05, z: 0}
+  gripRotationOffset: 180
+  autoCalibrateDepth: 1
 --- !u!4 &2007437484
 Transform:
   m_ObjectHideFlags: 0

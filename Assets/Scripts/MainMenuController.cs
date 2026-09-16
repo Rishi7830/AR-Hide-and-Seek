@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.XR.ARFoundation;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Hunter Hand Tracking")]
     public GameObject handTrackingCanvas;
+
+    [Header("AR Plane Detection")]
+    public ARPlaneManager arPlaneManager;
 
     [Header("Scene Management Names (Option B)")]
     public string hiderSceneName = "HiderScene";
@@ -44,6 +48,27 @@ public class MainMenuController : MonoBehaviour
             if (handTrackingCanvas != null)
                 handTrackingCanvas.SetActive(false);
         }
+        if (arPlaneManager != null)
+        {
+            arPlaneManager.enabled = false;
+        }
+    }
+
+    private void ShowAllTrackedPlanes()
+    {
+        if (arPlaneManager == null)
+            return;
+
+        foreach (
+            ARPlane plane
+            in arPlaneManager.trackables
+        )
+        {
+            if (plane != null)
+            {
+                plane.gameObject.SetActive(true);
+            }
+        }
     }
 
     public void OnHiderButtonClicked()
@@ -54,10 +79,37 @@ public class MainMenuController : MonoBehaviour
             if (hiderGamePanel != null) hiderGamePanel.SetActive(true);
             if (handTrackingCanvas != null)
                 handTrackingCanvas.SetActive(false);
+            if (arPlaneManager != null)
+            {
+                arPlaneManager.enabled = true;
+                ShowAllTrackedPlanes();
+            }
+
+            Debug.Log(
+            "[GameMode] Hider mode. " +
+            "Plane detection ON, hand visualization OFF."
+            );
         }
         else
         {
             SceneManager.LoadScene(hiderSceneName);
+        }
+    }
+
+    private void HideAllTrackedPlanes()
+    {
+        if (arPlaneManager == null)
+            return;
+
+        foreach (
+            ARPlane plane
+            in arPlaneManager.trackables
+        )
+        {
+            if (plane != null)
+            {
+                plane.gameObject.SetActive(false);
+            }
         }
     }
 
@@ -77,6 +129,12 @@ public class MainMenuController : MonoBehaviour
             // Hunter DOES use visible hand landmarks.
             if (handTrackingCanvas != null)
                 handTrackingCanvas.SetActive(true);
+
+            if (arPlaneManager != null)
+            {
+                arPlaneManager.enabled = false;
+                HideAllTrackedPlanes();
+            }
 
             Debug.Log(
                 "Hunter mode selected. " +
