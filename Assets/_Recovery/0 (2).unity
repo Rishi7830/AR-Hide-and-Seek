@@ -9134,6 +9134,8 @@ MonoBehaviour:
   timerText: {fileID: 483247592}
   revealDuration: 30
   pulseSpeed: 2
+  automaticStart: 1
+  hunterDuration: 120
 --- !u!4 &1470036558
 Transform:
   m_ObjectHideFlags: 0
@@ -13716,7 +13718,6 @@ MonoBehaviour:
   timerFillImage: {fileID: 577127299}
   timeUpPanel: {fileID: 1541454711}
   pausePanel: {fileID: 1126825835}
-  hunterRevealPhaseController: {fileID: 0}
   pauseButton: {fileID: 374021791}
   resumeButton: {fileID: 592909246}
 --- !u!114 &2099970474
@@ -13877,7 +13878,6 @@ MonoBehaviour:
   timerFillImage: {fileID: 257343791}
   timeUpPanel: {fileID: 262586843}
   pausePanel: {fileID: 0}
-  hunterRevealPhaseController: {fileID: 1470036557}
   pauseButton: {fileID: 0}
   resumeButton: {fileID: 0}
 --- !u!1 &2126445300

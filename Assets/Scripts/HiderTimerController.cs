@@ -4,123 +4,413 @@ using TMPro;
 
 public class HiderTimerController : MonoBehaviour
 {
+    // =============================================================
+    // TIMER SETTINGS
+    // =============================================================
+
     [Header("Timer Settings")]
-    [Tooltip("Total hiding duration in seconds.")]
-    public float totalTimeInSeconds = 120f; // 2:00 minutes
+
+    [Tooltip(
+        "Total gameplay duration in seconds."
+    )]
+    public float totalTimeInSeconds = 120f;
+
+    // =============================================================
+    // UI REFERENCES
+    // =============================================================
 
     [Header("UI References")]
+
     public TextMeshProUGUI timerText;
+
     public Image timerFillImage;
+
     public GameObject timeUpPanel;
+
     public GameObject pausePanel;
 
+    // =============================================================
+    // HUNTER REVEAL
+    // =============================================================
+
+    [Header("Hunter Reveal Phase")]
+
+    [Tooltip(
+        "Assign this ONLY for Hunter gameplay. " +
+        "Leave empty for Hider gameplay."
+    )]
+    public HunterRevealPhaseController
+        hunterRevealPhaseController;
+
+    // =============================================================
+    // UI BUTTONS
+    // =============================================================
+
     [Header("UI Buttons")]
+
     public Button pauseButton;
+
     public Button resumeButton;
 
+    // =============================================================
+    // INTERNAL STATE
+    // =============================================================
+
     private float currentTime;
+
     private bool isTimerRunning = false;
+
+    private bool timerCompleted = false;
+
+    // =============================================================
+    // START
+    // =============================================================
 
     private void Start()
     {
-        // Bind dynamic button listeners
+        // ---------------------------------------------------------
+        // CONNECT PAUSE BUTTON
+        // ---------------------------------------------------------
+
         if (pauseButton != null)
-            pauseButton.onClick.AddListener(PauseGame);
+        {
+            pauseButton.onClick.AddListener(
+                PauseGame
+            );
+        }
+
+        // ---------------------------------------------------------
+        // CONNECT RESUME BUTTON
+        // ---------------------------------------------------------
 
         if (resumeButton != null)
-            resumeButton.onClick.AddListener(ResumeGame);
+        {
+            resumeButton.onClick.AddListener(
+                ResumeGame
+            );
+        }
     }
+
+    // =============================================================
+    // ENABLE
+    // =============================================================
 
     private void OnEnable()
     {
         StartTimer();
     }
 
+    // =============================================================
+    // UPDATE
+    // =============================================================
+
     private void Update()
     {
-        if (!isTimerRunning) return;
+        if (!isTimerRunning)
+        {
+            return;
+        }
 
-        currentTime -= Time.deltaTime;
+        // ---------------------------------------------------------
+        // COUNT DOWN
+        // ---------------------------------------------------------
 
-        if (currentTime <= 0f)
+        currentTime -=
+            Time.deltaTime;
+
+        // ---------------------------------------------------------
+        // TIMER COMPLETE
+        // ---------------------------------------------------------
+
+        if (
+            currentTime <= 0f
+        )
         {
             currentTime = 0f;
+
             isTimerRunning = false;
-            OnTimerComplete();
+
+            if (!timerCompleted)
+            {
+                timerCompleted = true;
+
+                OnTimerComplete();
+            }
         }
+
+        // ---------------------------------------------------------
+        // UPDATE UI
+        // ---------------------------------------------------------
 
         UpdateTimerUI();
     }
+
+    // =============================================================
+    // START TIMER
+    // =============================================================
 
     public void StartTimer()
     {
-        currentTime = totalTimeInSeconds;
-        isTimerRunning = true;
+        currentTime =
+            totalTimeInSeconds;
 
-        if (timeUpPanel != null) timeUpPanel.SetActive(false);
-        if (pausePanel != null) pausePanel.SetActive(false);
+        isTimerRunning =
+            true;
+
+        timerCompleted =
+            false;
+
+        // ---------------------------------------------------------
+        // HIDE NORMAL END PANELS
+        // ---------------------------------------------------------
+
+        if (timeUpPanel != null)
+        {
+            timeUpPanel.SetActive(
+                false
+            );
+        }
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(
+                false
+            );
+        }
+
+        // ---------------------------------------------------------
+        // UPDATE UI
+        // ---------------------------------------------------------
 
         UpdateTimerUI();
     }
 
+    // =============================================================
+    // UPDATE TIMER UI
+    // =============================================================
+
     private void UpdateTimerUI()
     {
-        int minutes = Mathf.FloorToInt(currentTime / 60f);
-        int seconds = Mathf.FloorToInt(currentTime % 60f);
+        // ---------------------------------------------------------
+        // MINUTES / SECONDS
+        // ---------------------------------------------------------
+
+        int minutes =
+            Mathf.FloorToInt(
+                currentTime / 60f
+            );
+
+        int seconds =
+            Mathf.FloorToInt(
+                currentTime % 60f
+            );
+
+        // ---------------------------------------------------------
+        // TIMER TEXT
+        // ---------------------------------------------------------
 
         if (timerText != null)
         {
-            timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+            timerText.text =
+                string.Format(
+                    "{0:00}:{1:00}",
+                    minutes,
+                    seconds
+                );
         }
 
-        if (timerFillImage != null)
+        // ---------------------------------------------------------
+        // TIMER RING
+        // ---------------------------------------------------------
+
+        if (
+            timerFillImage != null &&
+            totalTimeInSeconds > 0f
+        )
         {
-            timerFillImage.fillAmount = currentTime / totalTimeInSeconds;
+            timerFillImage.fillAmount =
+                Mathf.Clamp01(
+                    currentTime /
+                    totalTimeInSeconds
+                );
         }
     }
+
+    // =============================================================
+    // TIMER COMPLETE
+    // =============================================================
 
     private void OnTimerComplete()
     {
-        if (timeUpPanel != null)
+        // =========================================================
+        // HUNTER MODE
+        // =========================================================
+
+        if (
+            hunterRevealPhaseController != null
+        )
         {
-            timeUpPanel.SetActive(true);
+            Debug.Log(
+                "[Timer] Hunter timer finished. " +
+                "Starting Reveal Phase."
+            );
+
+            // -----------------------------------------------------
+            // IMPORTANT:
+            // Do NOT show the normal TimeUpPanel.
+            // -----------------------------------------------------
+
+            if (timeUpPanel != null)
+            {
+                timeUpPanel.SetActive(
+                    false
+                );
+            }
+
+            // -----------------------------------------------------
+            // START 30 SECOND REVEAL
+            // -----------------------------------------------------
+
+            hunterRevealPhaseController
+                .BeginRevealPhase();
+
+            return;
         }
 
-        Debug.Log("Hiding time is over!");
+        // =========================================================
+        // HIDER MODE
+        // =========================================================
+
+        if (timeUpPanel != null)
+        {
+            timeUpPanel.SetActive(
+                true
+            );
+        }
+
+        Debug.Log(
+            "[Timer] Hiding time is over!"
+        );
     }
+
+    // =============================================================
+    // PAUSE
+    // =============================================================
 
     public void PauseGame()
     {
-        isTimerRunning = false;
+        isTimerRunning =
+            false;
 
-        // Freezes physics and animation time
-        Time.timeScale = 0f;
+        // ---------------------------------------------------------
+        // FREEZE GAME TIME
+        // ---------------------------------------------------------
+
+        Time.timeScale =
+            0f;
+
+        // ---------------------------------------------------------
+        // SHOW PAUSE PANEL
+        // ---------------------------------------------------------
 
         if (pausePanel != null)
         {
-            pausePanel.SetActive(true);
+            pausePanel.SetActive(
+                true
+            );
         }
     }
+
+    // =============================================================
+    // RESUME
+    // =============================================================
 
     public void ResumeGame()
     {
-        // Restores game time progression
-        Time.timeScale = 1f;
+        // ---------------------------------------------------------
+        // RESTORE TIME
+        // ---------------------------------------------------------
+
+        Time.timeScale =
+            1f;
+
+        // ---------------------------------------------------------
+        // HIDE PAUSE PANEL
+        // ---------------------------------------------------------
 
         if (pausePanel != null)
         {
-            pausePanel.SetActive(false);
+            pausePanel.SetActive(
+                false
+            );
         }
+
+        // ---------------------------------------------------------
+        // RESUME TIMER
+        // ---------------------------------------------------------
 
         if (currentTime > 0f)
         {
-            isTimerRunning = true;
+            isTimerRunning =
+                true;
         }
     }
 
+    // =============================================================
+    // GET CURRENT TIME
+    // =============================================================
+
+    public float GetCurrentTime()
+    {
+        return currentTime;
+    }
+
+    // =============================================================
+    // GET TIMER STATE
+    // =============================================================
+
+    public bool IsTimerRunning()
+    {
+        return isTimerRunning;
+    }
+
+    // =============================================================
+    // RESET
+    // =============================================================
+
+    public void ResetTimer()
+    {
+        StartTimer();
+    }
+
+    // =============================================================
+    // DISABLE
+    // =============================================================
+
     private void OnDisable()
     {
-        // Ensure timeScale is always reset if switching panels
-        Time.timeScale = 1f;
+        Time.timeScale =
+            1f;
+    }
+
+    // =============================================================
+    // DESTROY
+    // =============================================================
+
+    private void OnDestroy()
+    {
+        if (pauseButton != null)
+        {
+            pauseButton.onClick.RemoveListener(
+                PauseGame
+            );
+        }
+
+        if (resumeButton != null)
+        {
+            resumeButton.onClick.RemoveListener(
+                ResumeGame
+            );
+        }
     }
 }

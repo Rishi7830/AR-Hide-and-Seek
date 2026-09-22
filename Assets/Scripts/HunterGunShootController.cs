@@ -4,6 +4,10 @@ using TMPro;
 
 public class HunterGunShootController : MonoBehaviour
 {
+    // =============================================================
+    // REFERENCES
+    // =============================================================
+
     [Header("References")]
 
     [SerializeField]
@@ -18,6 +22,10 @@ public class HunterGunShootController : MonoBehaviour
     [SerializeField]
     private GameObject ammoFinishedPanel;
 
+    // =============================================================
+    // AMMO
+    // =============================================================
+
     [Header("Ammo")]
 
     [SerializeField]
@@ -25,35 +33,79 @@ public class HunterGunShootController : MonoBehaviour
 
     private int currentAmmo;
 
+    // =============================================================
+    // SHOOT SETTINGS
+    // =============================================================
+
     [Header("Shoot Settings")]
 
     [SerializeField]
     private float fireCooldown = 0.15f;
 
+    // =============================================================
+    // MUZZLE FLASH
+    // =============================================================
+
     [Header("Muzzle Flash")]
 
-    [Tooltip(
-        "If enabled, the muzzle flash is forcibly positioned " +
-        "at the gun muzzle every time the gun fires."
-    )]
     [SerializeField]
     private bool forceMuzzleFlashPosition = true;
 
-    [Tooltip(
-        "Additional offset from the GunMuzzle position."
-    )]
     [SerializeField]
     private Vector3 muzzleFlashOffset =
         Vector3.zero;
+
+    // =============================================================
+    // HIT DETECTION
+    // =============================================================
+
+    [Header("Hit Detection")]
+
+    [Tooltip(
+        "Maximum distance the gun can shoot."
+    )]
+    [SerializeField]
+    private float shootingRange = 50f;
+
+    [Tooltip(
+        "Layers that can be hit by the shooting ray."
+    )]
+    [SerializeField]
+    private LayerMask shootingLayers =
+        ~0;
+
+    [Tooltip(
+        "Show the shooting ray in the Scene view."
+    )]
+    [SerializeField]
+    private bool showDebugRay = true;
+
+    // =============================================================
+    // DEBUG
+    // =============================================================
 
     [Header("Debug")]
 
     [SerializeField]
     private bool logDebug = true;
-    private float nextAllowedShotTime = 0f;
+
+    // =============================================================
+    // INTERNAL STATE
+    // =============================================================
+
+    private float nextAllowedShotTime =
+        0f;
+
+    // =============================================================
+    // START
+    // =============================================================
 
     private void Start()
     {
+        // ---------------------------------------------------------
+        // FIND PICKUP CONTROLLER
+        // ---------------------------------------------------------
+
         if (pickupController == null)
         {
             pickupController =
@@ -61,7 +113,9 @@ public class HunterGunShootController : MonoBehaviour
                     HunterGunPickupController>();
         }
 
+        // ---------------------------------------------------------
         // CONNECT SHOOT BUTTON
+        // ---------------------------------------------------------
 
         if (shootButton != null)
         {
@@ -77,18 +131,34 @@ public class HunterGunShootController : MonoBehaviour
             );
         }
 
+        // ---------------------------------------------------------
         // INITIALISE AMMO
+        // ---------------------------------------------------------
 
         currentAmmo =
             maximumAmmo;
+
+        // ---------------------------------------------------------
+        // HIDE AMMO POPUP
+        // ---------------------------------------------------------
+
         if (ammoFinishedPanel != null)
         {
             ammoFinishedPanel.SetActive(
                 false
             );
         }
+
+        // ---------------------------------------------------------
+        // UPDATE UI
+        // ---------------------------------------------------------
+
         UpdateAmmoUI();
     }
+
+    // =============================================================
+    // DISABLE
+    // =============================================================
 
     private void OnDisable()
     {
@@ -100,9 +170,15 @@ public class HunterGunShootController : MonoBehaviour
         }
     }
 
+    // =============================================================
+    // SHOOT
+    // =============================================================
+
     public void Shoot()
     {
+        // ---------------------------------------------------------
         // CHECK AMMO
+        // ---------------------------------------------------------
 
         if (currentAmmo <= 0)
         {
@@ -112,14 +188,16 @@ public class HunterGunShootController : MonoBehaviour
             {
                 Debug.Log(
                     "[HunterShoot] " +
-                    "Cannot shoot. Ammo finished."
+                    "Ammo finished."
                 );
             }
 
             return;
         }
 
-        // CHECK COOLDOWN
+        // ---------------------------------------------------------
+        // FIRE COOLDOWN
+        // ---------------------------------------------------------
 
         if (
             Time.time <
@@ -129,14 +207,18 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
+        // ---------------------------------------------------------
         // CHECK PICKUP CONTROLLER
+        // ---------------------------------------------------------
 
         if (pickupController == null)
         {
             return;
         }
 
-        // GET CURRENT GUN
+        // ---------------------------------------------------------
+        // GET HELD GUN
+        // ---------------------------------------------------------
 
         HunterGunPickup heldGun =
             pickupController.GetHeldGun();
@@ -154,15 +236,25 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
+        // ---------------------------------------------------------
+        // SET COOLDOWN
+        // ---------------------------------------------------------
+
         nextAllowedShotTime =
             Time.time +
             fireCooldown;
+
+        // ---------------------------------------------------------
+        // CONSUME AMMO
+        // ---------------------------------------------------------
 
         currentAmmo--;
 
         UpdateAmmoUI();
 
+        // ---------------------------------------------------------
         // FIND GUN MUZZLE
+        // ---------------------------------------------------------
 
         Transform muzzle =
             FindChildRecursive(
@@ -181,8 +273,59 @@ public class HunterGunShootController : MonoBehaviour
             return;
         }
 
-        // FIND MUZZLE FLASH
+        // ---------------------------------------------------------
+        // MUZZLE FLASH
+        // ---------------------------------------------------------
 
+        PlayMuzzleFlash(
+            muzzle,
+            heldGun
+        );
+
+        // ---------------------------------------------------------
+        // SHOOT MECCHA
+        // ---------------------------------------------------------
+
+        PerformShotRaycast(
+            muzzle,
+            heldGun
+        );
+
+        // ---------------------------------------------------------
+        // DEBUG
+        // ---------------------------------------------------------
+
+        if (logDebug)
+        {
+            Debug.Log(
+                "[HunterShoot] Fired " +
+                heldGun.name +
+                " | Ammo = " +
+                currentAmmo +
+                "/" +
+                maximumAmmo
+            );
+        }
+
+        // ---------------------------------------------------------
+        // AMMO FINISHED
+        // ---------------------------------------------------------
+
+        if (currentAmmo <= 0)
+        {
+            ShowAmmoFinishedPopup();
+        }
+    }
+
+    // =============================================================
+    // PLAY MUZZLE FLASH
+    // =============================================================
+
+    private void PlayMuzzleFlash(
+        Transform muzzle,
+        HunterGunPickup heldGun
+    )
+    {
         ParticleSystem muzzleFlash =
             FindParticleSystemRecursive(
                 muzzle,
@@ -193,21 +336,21 @@ public class HunterGunShootController : MonoBehaviour
         {
             Debug.LogError(
                 "[HunterShoot] " +
-                "MuzzleFlash not found under " +
+                "MuzzleFlash not found on " +
                 heldGun.name
             );
 
             return;
         }
 
-        // FORCE MUZZLE FLASH POSITION
+        // ---------------------------------------------------------
+        // FORCE FLASH POSITION
+        // ---------------------------------------------------------
 
         if (forceMuzzleFlashPosition)
         {
             Transform flashTransform =
                 muzzleFlash.transform;
-
-            // POSITION
 
             flashTransform.position =
                 muzzle.position +
@@ -219,7 +362,9 @@ public class HunterGunShootController : MonoBehaviour
                 muzzle.rotation;
         }
 
-        // PLAY MUZZLE FLASH
+        // ---------------------------------------------------------
+        // PLAY
+        // ---------------------------------------------------------
 
         muzzleFlash.Stop(
             true,
@@ -228,57 +373,105 @@ public class HunterGunShootController : MonoBehaviour
         );
 
         muzzleFlash.Play();
-
-        if (logDebug)
-        {
-            Debug.Log(
-                "[HunterShoot] Fired " +
-                heldGun.name
-            );
-
-            Debug.Log(
-                "[HunterShoot] Muzzle position = " +
-                muzzle.position
-            );
-
-            Debug.Log(
-                "[HunterShoot] Flash position = " +
-                muzzleFlash.transform.position
-            );
-        }
-
-        if (currentAmmo <= 0)
-        {
-            ShowAmmoFinishedPopup();
-        }
     }
 
-    // UPDATE AMMO UI
+    // =============================================================
+    // PERFORM SHOOT RAYCAST
+    // =============================================================
 
-    private void UpdateAmmoUI()
+    private void PerformShotRaycast(
+        Transform muzzle,
+        HunterGunPickup heldGun
+    )
     {
-        if (ammoRemain == null)
-        {
-            return;
-        }
+        Vector3 origin =
+            muzzle.position;
 
-        ammoRemain.text =
-            currentAmmo +
-            "/" +
-            maximumAmmo;
-    }
+        Vector3 direction =
+            muzzle.forward.normalized;
 
-    private void ShowAmmoFinishedPopup()
-    {
-        if (ammoFinishedPanel != null)
+        // ---------------------------------------------------------
+        // DEBUG RAY
+        // ---------------------------------------------------------
+
+        if (showDebugRay)
         {
-            ammoFinishedPanel.SetActive(
-                true
+            Debug.DrawRay(
+                origin,
+                direction * shootingRange,
+                Color.red,
+                2f
             );
         }
+
+        // ---------------------------------------------------------
+        // PHYSICS RAYCAST
+        // ---------------------------------------------------------
+
+        if (
+            Physics.Raycast(
+                origin,
+                direction,
+                out RaycastHit hit,
+                shootingRange,
+                shootingLayers,
+                QueryTriggerInteraction.Ignore
+            )
+        )
+        {
+            // -----------------------------------------------------
+            // LOOK FOR MECCHA TARGET
+            // -----------------------------------------------------
+
+            HunterMecchaTarget target =
+                hit.collider
+                    .GetComponentInParent<
+                        HunterMecchaTarget>();
+
+            if (target != null)
+            {
+                target.OnShot();
+
+                if (logDebug)
+                {
+                    Debug.Log(
+                        "[HunterShoot] " +
+                        "SHOT MECCHA: " +
+                        target.name
+                    );
+                }
+
+                return;
+            }
+
+            // -----------------------------------------------------
+            // SOMETHING ELSE WAS HIT
+            // -----------------------------------------------------
+
+            if (logDebug)
+            {
+                Debug.Log(
+                    "[HunterShoot] " +
+                    "Shot hit: " +
+                    hit.collider.name
+                );
+            }
+        }
+        else
+        {
+            if (logDebug)
+            {
+                Debug.Log(
+                    "[HunterShoot] " +
+                    "Shot missed."
+                );
+            }
+        }
     }
 
+    // =============================================================
     // FIND TRANSFORM RECURSIVELY
+    // =============================================================
 
     private Transform FindChildRecursive(
         Transform parent,
@@ -319,7 +512,9 @@ public class HunterGunShootController : MonoBehaviour
         return null;
     }
 
+    // =============================================================
     // FIND PARTICLE SYSTEM RECURSIVELY
+    // =============================================================
 
     private ParticleSystem
         FindParticleSystemRecursive(
@@ -368,21 +563,58 @@ public class HunterGunShootController : MonoBehaviour
         return null;
     }
 
+    // =============================================================
+    // UPDATE AMMO UI
+    // =============================================================
+
+    private void UpdateAmmoUI()
+    {
+        if (ammoRemain == null)
+        {
+            return;
+        }
+
+        ammoRemain.text =
+            currentAmmo +
+            "/" +
+            maximumAmmo;
+    }
+
+    // =============================================================
+    // SHOW AMMO POPUP
+    // =============================================================
+
+    private void ShowAmmoFinishedPopup()
+    {
+        if (ammoFinishedPanel != null)
+        {
+            ammoFinishedPanel.SetActive(
+                true
+            );
+        }
+    }
+
+    // =============================================================
     // GET CURRENT AMMO
+    // =============================================================
 
     public int GetCurrentAmmo()
     {
         return currentAmmo;
     }
 
+    // =============================================================
     // GET MAXIMUM AMMO
+    // =============================================================
 
     public int GetMaximumAmmo()
     {
         return maximumAmmo;
     }
 
+    // =============================================================
     // RESET AMMO
+    // =============================================================
 
     public void ResetAmmo()
     {
@@ -402,8 +634,7 @@ public class HunterGunShootController : MonoBehaviour
         UpdateAmmoUI();
 
         Debug.Log(
-            "[HunterShoot] " +
-            "Ammo reset to " +
+            "[HunterShoot] Ammo reset to " +
             maximumAmmo +
             "/" +
             maximumAmmo
