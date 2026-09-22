@@ -188,7 +188,7 @@ public class HiderTimerController : MonoBehaviour
         {
             hunterScoreController.ResetScore();
         }
-
+         // Added
         if (hunterRevealPhaseController != null)
         {
             hunterRevealPhaseController.ResetRevealState();
