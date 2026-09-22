@@ -53,7 +53,7 @@ public class HunterMecchaScoreController : MonoBehaviour
             );
 
         // ---------------------------------------------------------
-        // COUNT TOTAL
+        // COUNT TOTAL MECCHAS
         // ---------------------------------------------------------
 
         totalMecchas =
@@ -97,7 +97,7 @@ public class HunterMecchaScoreController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // PREVENT DOUBLE COUNTING
+        // ONLY COUNT A TARGET THAT HAS ACTUALLY BEEN HIT
         // ---------------------------------------------------------
 
         if (!target.IsHit())
@@ -106,19 +106,18 @@ public class HunterMecchaScoreController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // CHECK CURRENT COUNT
+        // PREVENT DOUBLE COUNTING
         // ---------------------------------------------------------
 
         if (
-            mecchasFound >=
-            totalMecchas
+            mecchasFound >= totalMecchas
         )
         {
             return;
         }
 
         // ---------------------------------------------------------
-        // INCREMENT FOUND
+        // INCREASE FOUND
         // ---------------------------------------------------------
 
         mecchasFound++;
@@ -192,11 +191,25 @@ public class HunterMecchaScoreController : MonoBehaviour
     }
 
     // =============================================================
-    // WIN CONDITION
+    // CHECK IF NO MECCHAS EXIST
+    // =============================================================
+
+    public bool HasNoMecchas()
+    {
+        return totalMecchas <= 0;
+    }
+
+    // =============================================================
+    // CHECK WIN CONDITION
     // =============================================================
 
     public bool AllMecchasFound()
     {
+        // ---------------------------------------------------------
+        // There must be at least one Meccha for the Seekers
+        // to win through this condition.
+        // ---------------------------------------------------------
+
         return totalMecchas > 0 &&
                remainingMecchas <= 0;
     }

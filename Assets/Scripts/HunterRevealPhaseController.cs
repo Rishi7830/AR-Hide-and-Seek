@@ -82,9 +82,6 @@ public class HunterRevealPhaseController : MonoBehaviour
 
     [Header("Reveal Settings")]
 
-    [Tooltip(
-        "Duration of the Reveal Phase in seconds."
-    )]
     [SerializeField]
     private float revealDuration = 30f;
 
@@ -94,9 +91,6 @@ public class HunterRevealPhaseController : MonoBehaviour
 
     [Header("Meccha Pulse")]
 
-    [Tooltip(
-        "Number of red-white pulses per second."
-    )]
     [SerializeField]
     private float pulseSpeed = 2f;
 
@@ -141,7 +135,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // INITIAL UI STATE
+        // INITIAL STATE
         // ---------------------------------------------------------
 
         ResetRevealState();
@@ -149,8 +143,6 @@ public class HunterRevealPhaseController : MonoBehaviour
 
     // =============================================================
     // RESET REVEAL STATE
-    //
-    // Call this when a NEW Hunter round starts.
     // =============================================================
 
     public void ResetRevealState()
@@ -184,7 +176,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // ENABLE SHOOTING FOR A NEW HUNTER ROUND
+        // ENABLE SHOOTING FOR NEW HUNTER ROUND
         // ---------------------------------------------------------
 
         if (shootButton != null)
@@ -193,7 +185,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // RESET TIMER UI
+        // RESET REVEAL TIMER UI
         // ---------------------------------------------------------
 
         if (timerRing != null)
@@ -203,12 +195,11 @@ public class HunterRevealPhaseController : MonoBehaviour
 
         if (timerText != null)
         {
-            timerText.text = "30";
+            timerText.text =
+                Mathf.CeilToInt(
+                    revealDuration
+                ).ToString();
         }
-
-        Debug.Log(
-            "[HunterReveal] Reveal state reset."
-        );
     }
 
     // =============================================================
@@ -232,7 +223,7 @@ public class HunterRevealPhaseController : MonoBehaviour
     public void BeginRevealPhase()
     {
         // ---------------------------------------------------------
-        // PREVENT DUPLICATE END STATES
+        // PREVENT DUPLICATE RESULT
         // ---------------------------------------------------------
 
         if (finalResultShown)
@@ -241,7 +232,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // FIND SCORE CONTROLLER IF NECESSARY
+        // FIND SCORE CONTROLLER
         // ---------------------------------------------------------
 
         if (scoreController == null)
@@ -253,9 +244,28 @@ public class HunterRevealPhaseController : MonoBehaviour
 
         // =========================================================
         // CASE 1:
-        // ALL MECCHAS WERE ALREADY FOUND
-        //
-        // Therefore there is NO Reveal Phase.
+        // NO MECCHAS WERE PLACED
+        // =========================================================
+
+        if (
+            scoreController != null &&
+            scoreController.HasNoMecchas()
+        )
+        {
+            Debug.Log(
+                "[HunterReveal] " +
+                "No Mecchas were placed. " +
+                "Skipping Reveal Phase."
+            );
+
+            ShowNoMecchaResult();
+
+            return;
+        }
+
+        // =========================================================
+        // CASE 2:
+        // ALL MECCHAS WERE FOUND
         // =========================================================
 
         if (
@@ -275,7 +285,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // =========================================================
-        // CASE 2:
+        // CASE 3:
         // MECCHAS ARE STILL REMAINING
         // =========================================================
 
@@ -305,7 +315,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // HIDE FINAL RESULT PANEL
+        // HIDE RESULT PANEL
         // ---------------------------------------------------------
 
         if (resultPanel != null)
@@ -314,18 +324,19 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // RESET REVEAL TIMER
+        // RESET TIMER
         // ---------------------------------------------------------
 
         if (timerRing != null)
         {
-            timerRing.fillAmount = 1f;
+            timerRing.fillAmount =
+                1f;
         }
 
         UpdateTimerUI();
 
         // ---------------------------------------------------------
-        // START PULSE ON UNFOUND MECCHAS
+        // START REMAINING MECCHA PULSE
         // ---------------------------------------------------------
 
         if (mecchaTargets != null)
@@ -349,8 +360,7 @@ public class HunterRevealPhaseController : MonoBehaviour
 
         Debug.Log(
             "[HunterReveal] " +
-            "Reveal Phase started. " +
-            "Shooting disabled."
+            "Reveal Phase started."
         );
     }
 
@@ -378,26 +388,24 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // UPDATE PULSE
+        // PULSE
         // ---------------------------------------------------------
 
         UpdateMecchaPulse();
 
         // ---------------------------------------------------------
-        // UPDATE TIMER UI
+        // TIMER UI
         // ---------------------------------------------------------
 
         UpdateTimerUI();
 
         // ---------------------------------------------------------
-        // END REVEAL WHEN TIMER FINISHES
-        //
-        // IMPORTANT:
-        // We do NOT check whether all Mecchas were found here,
-        // because shooting is disabled during Reveal.
+        // REVEAL ENDS
         // ---------------------------------------------------------
 
-        if (remainingTime <= 0f)
+        if (
+            remainingTime <= 0f
+        )
         {
             EndRevealPhase();
         }
@@ -414,10 +422,6 @@ public class HunterRevealPhaseController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
-        // CREATE SMOOTH 0 -> 1 -> 0 PULSE
-        // ---------------------------------------------------------
-
         float pulse =
             (
                 Mathf.Sin(
@@ -430,10 +434,6 @@ public class HunterRevealPhaseController : MonoBehaviour
             ) *
             0.5f;
 
-        // ---------------------------------------------------------
-        // APPLY TO UNFOUND MECCHAS ONLY
-        // ---------------------------------------------------------
-
         foreach (
             HunterMecchaTarget target
             in mecchaTargets
@@ -443,6 +443,10 @@ public class HunterRevealPhaseController : MonoBehaviour
             {
                 continue;
             }
+
+            // -----------------------------------------------------
+            // ONLY UNFOUND MECCHAS PULSE
+            // -----------------------------------------------------
 
             if (!target.IsHit())
             {
@@ -460,7 +464,7 @@ public class HunterRevealPhaseController : MonoBehaviour
     private void UpdateTimerUI()
     {
         // ---------------------------------------------------------
-        // TIMER RING
+        // RING
         // ---------------------------------------------------------
 
         if (
@@ -476,7 +480,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // TIMER TEXT
+        // TEXT
         // ---------------------------------------------------------
 
         if (timerText != null)
@@ -505,16 +509,12 @@ public class HunterRevealPhaseController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
-        // STOP REVEAL STATE
-        // ---------------------------------------------------------
-
         revealActive = false;
 
         remainingTime = 0f;
 
         // ---------------------------------------------------------
-        // STOP MECCHA PULSES
+        // STOP PULSE
         // ---------------------------------------------------------
 
         if (mecchaTargets != null)
@@ -546,7 +546,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // SHOOT REMAINS DISABLED
+        // SHOOTING STAYS DISABLED
         // ---------------------------------------------------------
 
         if (shootButton != null)
@@ -555,13 +555,46 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // MECCHAS REMAINED UNFOUND
-        //
-        // Because shooting was disabled throughout Reveal,
-        // if we reach here with remaining Mecchas, Hiders win.
+        // MECCHAS REMAIN
         // ---------------------------------------------------------
 
         ShowHidersWin();
+    }
+
+    // =============================================================
+    // NO MECCHA RESULT
+    // =============================================================
+
+    private void ShowNoMecchaResult()
+    {
+        // ---------------------------------------------------------
+        // MAKE SURE EVERYTHING IS STOPPED
+        // ---------------------------------------------------------
+
+        revealActive = false;
+
+        if (shootButton != null)
+        {
+            shootButton.interactable = false;
+        }
+
+        if (revealPhasePanel != null)
+        {
+            revealPhasePanel.SetActive(false);
+        }
+
+        // ---------------------------------------------------------
+        // SHOW RESULT PANEL
+        // ---------------------------------------------------------
+
+        ShowFinalResult(
+            "Neither Won - No Meccha Placed :("
+        );
+
+        Debug.Log(
+            "[HunterGame] " +
+            "Neither team won because no Meccha was placed."
+        );
     }
 
     // =============================================================
@@ -571,7 +604,7 @@ public class HunterRevealPhaseController : MonoBehaviour
     private void ShowSeekersWin()
     {
         // ---------------------------------------------------------
-        // MAKE SURE SHOOTING IS DISABLED
+        // DISABLE SHOOTING
         // ---------------------------------------------------------
 
         if (shootButton != null)
@@ -580,7 +613,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // MAKE SURE REVEAL IS NOT ACTIVE
+        // STOP REVEAL
         // ---------------------------------------------------------
 
         StopReveal();
@@ -606,7 +639,7 @@ public class HunterRevealPhaseController : MonoBehaviour
     private void ShowHidersWin()
     {
         // ---------------------------------------------------------
-        // SHOOTING DISABLED
+        // DISABLE SHOOTING
         // ---------------------------------------------------------
 
         if (shootButton != null)
@@ -615,7 +648,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // MAKE SURE REVEAL IS STOPPED
+        // STOP REVEAL
         // ---------------------------------------------------------
 
         StopReveal();
@@ -643,7 +676,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         revealActive = false;
 
         // ---------------------------------------------------------
-        // STOP ALL REMAINING PULSES
+        // STOP PULSING
         // ---------------------------------------------------------
 
         if (mecchaTargets != null)
@@ -683,10 +716,6 @@ public class HunterRevealPhaseController : MonoBehaviour
         string message
     )
     {
-        // ---------------------------------------------------------
-        // PREVENT DUPLICATES
-        // ---------------------------------------------------------
-
         if (finalResultShown)
         {
             return;
@@ -736,7 +765,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         ReturnToMainMenuAfterResult()
     {
         // ---------------------------------------------------------
-        // WAIT 10 SECONDS
+        // WAIT FOR RESULT DURATION
         // ---------------------------------------------------------
 
         yield return new WaitForSeconds(
@@ -744,7 +773,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         );
 
         // ---------------------------------------------------------
-        // HIDE RESULT PANEL
+        // HIDE RESULT
         // ---------------------------------------------------------
 
         if (resultPanel != null)
@@ -771,7 +800,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // RESET / REMOVE GUN RACK
+        // REMOVE GUN RACK
         // ---------------------------------------------------------
 
         if (gunManager != null)
@@ -789,7 +818,7 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
 
         // ---------------------------------------------------------
-        // RESET RESULT STATE
+        // RESET INTERNAL STATE
         // ---------------------------------------------------------
 
         finalResultShown = false;
