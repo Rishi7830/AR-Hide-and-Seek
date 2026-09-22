@@ -1,4 +1,4 @@
-# AR Meccha Chameleon 🦎🎮
+# AR Hide and Seek 🎮
 
 An immersive, hands-free 2-player spatial Augmented Reality game that brings screen-bound camouflage gameplay into real-world physical environments, from the real world game "Meccha Chameleon". Powered by a custom wearable sensor glove, FPGA-accelerated AI gesture classification, and multi-device AR spatial synchronization.
 
