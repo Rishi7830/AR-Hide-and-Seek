@@ -30,8 +30,11 @@ public class HunterGunShootController : MonoBehaviour
 
     [SerializeField]
     private int maximumAmmo = 6;
-
     private int currentAmmo;
+
+    [Header("Hunter Score")]
+    [SerializeField]
+    private HunterMecchaScoreController scoreController;
 
     // =============================================================
     // SHOOT SETTINGS
@@ -41,6 +44,10 @@ public class HunterGunShootController : MonoBehaviour
 
     [SerializeField]
     private float fireCooldown = 0.15f;
+
+    [Header("Reveal Phase")]
+    [SerializeField]
+    private HunterRevealPhaseController revealPhaseController;
 
     // =============================================================
     // MUZZLE FLASH
@@ -123,6 +130,14 @@ public class HunterGunShootController : MonoBehaviour
                 Shoot
             );
         }
+
+        if (scoreController == null)
+        {
+            scoreController =
+                FindFirstObjectByType<
+                    HunterMecchaScoreController>();
+        }
+
         else
         {
             Debug.LogWarning(
@@ -176,6 +191,19 @@ public class HunterGunShootController : MonoBehaviour
 
     public void Shoot()
     {
+        if (
+            revealPhaseController != null &&
+            revealPhaseController.IsRevealActive()
+        )
+        {
+            if (logDebug)
+            {
+                Debug.Log(
+                    "[HunterShoot] Shooting disabled during Reveal Phase."
+                );
+            }
+            return;
+        }
         // ---------------------------------------------------------
         // CHECK AMMO
         // ---------------------------------------------------------
@@ -430,7 +458,26 @@ public class HunterGunShootController : MonoBehaviour
 
             if (target != null)
             {
-                target.OnShot();
+                // ---------------------------------------------------------
+                // SHOOT TARGET
+                // ---------------------------------------------------------
+
+                bool newlyFound =
+                    target.OnShot();
+
+                // ---------------------------------------------------------
+                // ONLY UPDATE SCORE IF THIS WAS A NEW MECCHA
+                // ---------------------------------------------------------
+
+                if (
+                    newlyFound &&
+                    scoreController != null
+                )
+                {
+                    scoreController.RegisterMecchaFound(
+                        target
+                    );
+                }
 
                 if (logDebug)
                 {

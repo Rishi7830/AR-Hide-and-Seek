@@ -42,6 +42,10 @@ public class HiderTimerController : MonoBehaviour
     public HunterRevealPhaseController
         hunterRevealPhaseController;
 
+    [Header("Hunter Score")]
+    public HunterMecchaScoreController
+    hunterScoreController;
+
     // =============================================================
     // UI BUTTONS
     // =============================================================
@@ -176,6 +180,18 @@ public class HiderTimerController : MonoBehaviour
             pausePanel.SetActive(
                 false
             );
+        }
+
+        if (
+            hunterScoreController != null
+        )
+        {
+            hunterScoreController.ResetScore();
+        }
+
+        if (hunterRevealPhaseController != null)
+        {
+            hunterRevealPhaseController.ResetRevealState();
         }
 
         // ---------------------------------------------------------

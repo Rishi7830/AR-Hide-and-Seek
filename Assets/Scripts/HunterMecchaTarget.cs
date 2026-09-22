@@ -91,7 +91,7 @@ public class HunterMecchaTarget : MonoBehaviour
     // SHOT
     // =============================================================
 
-    public void OnShot()
+    public bool OnShot()
     {
         // ---------------------------------------------------------
         // DON'T PROCESS SAME MECCHA TWICE
@@ -99,7 +99,7 @@ public class HunterMecchaTarget : MonoBehaviour
 
         if (alreadyHit)
         {
-            return;
+            return false;
         }
 
         alreadyHit =
@@ -122,6 +122,7 @@ public class HunterMecchaTarget : MonoBehaviour
             "[HunterMeccha] Meccha has been shot: " +
             gameObject.name
         );
+        return true;
     }
 
     // =============================================================
