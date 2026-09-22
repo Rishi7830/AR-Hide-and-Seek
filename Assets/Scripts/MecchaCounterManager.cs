@@ -1,5 +1,6 @@
-using UnityEngine;
+using System;
 using TMPro;
+using UnityEngine;
 
 public class MecchaCounterManager : MonoBehaviour
 {
@@ -7,37 +8,51 @@ public class MecchaCounterManager : MonoBehaviour
     public TextMeshProUGUI counterText;
 
     [Header("Text Format Settings")]
-    [SerializeField] private string labelPrefix = "Mecchas Spawned: ";
+    [SerializeField]
+    private string labelPrefix = "Mecchas Spawned: ";
 
-    private int currentCount = 0;
+    public int CurrentCount { get; private set; }
+
+    public event Action<int> CountChanged;
 
     private void Start()
     {
+        CurrentCount = 0;
         UpdateCounterUI();
     }
 
-    // Call when a new Meccha is spawned
     public void IncrementCount()
     {
-        currentCount++;
+        CurrentCount++;
+
         UpdateCounterUI();
+
+        CountChanged?.Invoke(CurrentCount);
     }
 
-    // Call when a Meccha is deleted
     public void DecrementCount()
     {
-        currentCount = Mathf.Max(0, currentCount - 1);
+        CurrentCount = Mathf.Max(
+            0,
+            CurrentCount - 1
+        );
+
         UpdateCounterUI();
+
+        CountChanged?.Invoke(CurrentCount);
     }
 
-    // Updates the text display
     private void UpdateCounterUI()
     {
         if (counterText != null)
         {
-            counterText.text = $"{labelPrefix}{currentCount}";
+            counterText.text =
+                $"{labelPrefix}{CurrentCount}";
         }
     }
 
-    public int GetCount() => currentCount;
+    public int GetCount()
+    {
+        return CurrentCount;
+    }
 }

@@ -73,27 +73,27 @@ public class MainMenuController : MonoBehaviour
 
     public void OnHiderButtonClicked()
     {
-        if (usePanelSwapping)
-        {
-            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-            if (hiderGamePanel != null) hiderGamePanel.SetActive(true);
-            if (handTrackingCanvas != null)
-                handTrackingCanvas.SetActive(false);
-            if (arPlaneManager != null)
-            {
-                arPlaneManager.enabled = true;
-                ShowAllTrackedPlanes();
-            }
-
-            Debug.Log(
-            "[GameMode] Hider mode. " +
-            "Plane detection ON, hand visualization OFF."
-            );
-        }
-        else
+        if (!usePanelSwapping)
         {
             SceneManager.LoadScene(hiderSceneName);
+            return;
         }
+
+        if (SinglePhoneGameController.Instance == null)
+        {
+            Debug.LogError(
+                "SinglePhoneGameController was not found in the scene."
+            );
+
+            return;
+        }
+
+        SinglePhoneGameController.Instance.BeginHiderGame();
+
+        Debug.Log(
+            "[GameMode] Hider mode started. " +
+            "Hiding timer has begun."
+        );
     }
 
     private void HideAllTrackedPlanes()
