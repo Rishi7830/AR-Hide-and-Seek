@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -8,35 +9,100 @@ using EnhancedTouch =
 
 public class ScreenPaintController : MonoBehaviour
 {
+    // CAMERA
+
     [Header("Camera")]
-    [SerializeField] private Camera arCamera;
+    [SerializeField]
+    private Camera arCamera;
+
+    // RAYCAST
 
     [Header("Raycast")]
-    [SerializeField] private float rayDistance = 100f;
+    [SerializeField]
+    private float rayDistance = 100f;
+
+    [Tooltip(
+        "Maximum number of physics hits stored for one ray."
+    )]
+    [SerializeField]
+    private int maxRaycastHits = 16;
+
+    // PAINT SMOOTHING / THROTTLING
+
+    [Header("Painting Performance")]
+    [Tooltip(
+        "Minimum screen movement in pixels before another paint " +
+        "sample is calculated."
+    )]
+    [SerializeField]
+    private float minimumPaintPixelMovement = 4f;
+
+    [Tooltip(
+        "If enabled, painting only processes when the touch " +
+        "has actually moved."
+    )]
+    [SerializeField]
+    private bool onlyPaintWhenMoving = true;
+
+    // EDITOR
 
     [Header("Editor Testing")]
-    [SerializeField] private bool allowMouseInEditor = true;
+    [SerializeField]
+    private bool allowMouseInEditor = true;
 
     [Header("Debug")]
-    [SerializeField] private bool logRaycastHits = true;
+    [SerializeField]
+    private bool logRaycastHits = false;
+
+    // INTERNAL STATE
 
     private MecchaTexturePainter currentPainter;
+    private Vector2 lastPaintScreenPosition;
+    private bool hasPaintScreenPosition = false;
+
+    // RAYCAST BUFFER
+
+    private RaycastHit[] raycastHits;
+    private class MeshUVData
+    {
+        public int[] triangles;
+        public Vector2[] uvs;
+    }
+
+    private readonly Dictionary<
+        Mesh,
+        MeshUVData
+    > meshUVCache =
+        new Dictionary<
+            Mesh,
+            MeshUVData
+        >();
+
+    // STATIC COLORS
+
+    private static readonly int BaseColorID =
+        Shader.PropertyToID("_BaseColor");
+    private static readonly int ColorID =
+        Shader.PropertyToID("_Color");
 
     private void Awake()
     {
         EnhancedTouchSupport.Enable();
-    }
-
-    private void OnDestroy()
-    {
-        EnhancedTouchSupport.Disable();
+        raycastHits =
+            new RaycastHit[
+                Mathf.Max(
+                    maxRaycastHits,
+                    1
+                )
+            ];
     }
 
     private void Start()
     {
         if (arCamera == null)
         {
-            arCamera = Camera.main;
+            arCamera =
+                Camera.main;
         }
 
         if (arCamera == null)
@@ -47,37 +113,56 @@ public class ScreenPaintController : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        EnhancedTouchSupport.Disable();
+
+        meshUVCache.Clear();
+    }
+
     private void Update()
     {
-        // PAINT MODE CHECK
-
-        if (PaintUIController.Instance == null)
+        if (
+            PaintUIController.Instance == null
+        )
         {
             return;
         }
 
-        if (!PaintUIController.Instance.IsPaintModeActive)
+        if (
+            !PaintUIController
+                .Instance
+                .IsPaintModeActive
+        )
         {
             if (currentPainter != null)
             {
                 currentPainter.EndStroke();
+
                 currentPainter = null;
             }
+
+            hasPaintScreenPosition = false;
 
             return;
         }
 
-        // NEW INPUT SYSTEM TOUCH
+        // TOUCH
 
-        if (EnhancedTouch.activeTouches.Count > 0)
+        if (
+            EnhancedTouch.activeTouches.Count > 0
+        )
         {
-            EnhancedTouch touch = EnhancedTouch.activeTouches[0];
+            EnhancedTouch touch =
+                EnhancedTouch
+                    .activeTouches[0];
+
             ProcessTouch(touch);
 
             return;
         }
 
-        // UNITY EDITOR MOUSE
+        // EDITOR MOUSE
 
         if (
             allowMouseInEditor &&
@@ -90,16 +175,19 @@ public class ScreenPaintController : MonoBehaviour
             )
             {
                 BeginPaint(
-                    Mouse.current.position.ReadValue()
+                    Mouse.current.position
+                        .ReadValue()
                 );
             }
 
             if (
-                Mouse.current.leftButton.isPressed
+                Mouse.current.leftButton
+                    .isPressed
             )
             {
                 ContinuePaint(
-                    Mouse.current.position.ReadValue()
+                    Mouse.current.position
+                        .ReadValue()
                 );
             }
 
@@ -119,38 +207,43 @@ public class ScreenPaintController : MonoBehaviour
         EnhancedTouch touch
     )
     {
-        Vector2 screenPosition = touch.screenPosition;
+        Vector2 screenPosition =
+            touch.screenPosition;
 
         switch (touch.phase)
         {
-            case UnityEngine.InputSystem.TouchPhase.Began:
+            // TOUCH BEGAN
 
-                BeginPaint(screenPosition);
+            case UnityEngine.InputSystem.TouchPhase.Began:
+                BeginPaint(
+                    screenPosition
+                );
                 break;
 
-            case UnityEngine.InputSystem.TouchPhase.Moved:
+            // TOUCH MOVED
 
-                ContinuePaint(screenPosition);
+            case UnityEngine.InputSystem.TouchPhase.Moved:
+                ContinuePaint(
+                    screenPosition
+                );
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Stationary:
-
-                ContinuePaint(screenPosition);
                 break;
 
-            case UnityEngine.InputSystem.TouchPhase.Ended:
+            // TOUCH ENDED
 
+            case UnityEngine.InputSystem.TouchPhase.Ended:
                 EndPaint();
                 break;
 
             case UnityEngine.InputSystem.TouchPhase.Canceled:
-
                 EndPaint();
                 break;
         }
     }
 
-    // BEGIN TOUCH
+    // BEGIN PAINT
 
     private void BeginPaint(
         Vector2 screenPosition
@@ -161,120 +254,123 @@ public class ScreenPaintController : MonoBehaviour
             return;
         }
 
-        if (IsPointerOverUI())
+        if (
+            IsPointerOverUI()
+        )
         {
             return;
         }
 
-        Ray ray = arCamera.ScreenPointToRay(
+        hasPaintScreenPosition = true;
+
+        lastPaintScreenPosition =
+            screenPosition;
+
+        // CREATE RAY
+
+        Ray ray =
+            arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        RaycastHit[] hits = Physics.RaycastAll(
+        // RAYCAST
+
+        int hitCount =
+            Physics.RaycastNonAlloc(
                 ray,
+                raycastHits,
                 rayDistance
             );
 
-        if (hits == null || hits.Length == 0)
+        if (hitCount <= 0)
         {
-            Debug.Log(
-                "[ScreenPaint] Nothing was hit."
+            if (logRaycastHits)
+            {
+                Debug.Log(
+                    "[ScreenPaint] " +
+                    "Nothing was hit."
+                );
+            }
+
+            return;
+        }
+
+        // FIND CLOSEST RELEVANT HIT
+
+        RaycastHit closestHit;
+
+        if (
+            !TryFindPaintableHit(
+                hitCount,
+                out closestHit
+            )
+        )
+        {
+            return;
+        }
+
+        // COLOR SPHERE
+
+        ColorSphere colorSphere =
+            closestHit.collider
+                .GetComponent<ColorSphere>();
+
+        if (colorSphere == null)
+        {
+            colorSphere =
+                closestHit.collider
+                    .GetComponentInParent<
+                        ColorSphere>();
+        }
+
+        if (colorSphere != null)
+        {
+            SelectColor(
+                colorSphere
             );
 
             return;
         }
 
-        // SORT HITS BY DISTANCE
+        // MECCHA
 
-        System.Array.Sort(
-            hits,
-            (a, b) => a.distance.CompareTo(b.distance)
+        MecchaTexturePainter painter =
+            closestHit.collider
+                .GetComponent<
+                    MecchaTexturePainter>();
+
+        if (painter == null)
+        {
+            painter =
+                closestHit.collider
+                    .GetComponentInParent<
+                        MecchaTexturePainter>();
+        }
+
+        if (painter == null)
+        {
+            return;
+        }
+
+        if (
+            !TryCalculateHitUV(
+                closestHit,
+                out Vector2 uv
+            )
+        )
+        {
+            Debug.LogWarning(
+                "[ScreenPaint] " +
+                "Could not calculate Meccha UV."
+            );
+
+            return;
+        }
+
+        StartMecchaStroke(
+            painter,
+            uv
         );
-
-        if (logRaycastHits)
-        {
-            Debug.Log(
-                "[ScreenPaint] Number of raycast hits: " +
-                hits.Length
-            );
-
-            foreach (RaycastHit debugHit in hits)
-            {
-                Debug.Log(
-                    "[ScreenPaint] Hit: " +
-                    debugHit.collider.name +
-                    " | Distance: " +
-                    debugHit.distance
-                );
-            }
-        }
-
-        // SEARCH FOR COLOR SPHERE OR MECCHA
-
-        foreach (RaycastHit hit in hits)
-        {
-            // COLOR SPHERE
-
-            ColorSphere colorSphere = hit.collider.GetComponent<ColorSphere>();
-
-            if (colorSphere == null)
-            {
-                colorSphere = hit.collider.GetComponentInParent<ColorSphere>();
-            }
-
-            if (colorSphere != null)
-            {
-                SelectColor(
-                    colorSphere
-                );
-
-                return;
-            }
-
-            // MECCHA
-
-            MecchaTexturePainter painter = hit.collider.GetComponent < MecchaTexturePainter>();
-
-            if (painter == null)
-            {
-                painter =
-                    hit.collider
-                        .GetComponentInParent<
-                            MecchaTexturePainter>();
-            }
-
-            if (painter != null)
-            {
-                if (
-                    !TryCalculateHitUV(
-                        hit,
-                        out Vector2 uv
-                    )
-                )
-                {
-                    Debug.LogWarning(
-                        "[ScreenPaint] " +
-                        "Could not calculate Meccha UV."
-                    );
-
-                    return;
-                }
-
-                StartMecchaStroke(
-                    painter,
-                    uv
-                );
-
-                return;
-            }
-
-            // IGNORE EVERYTHING ELSE
-
-            Debug.Log(
-                "[ScreenPaint] Ignoring non-paintable hit: " +
-                hit.collider.name
-            );
-        }
     }
 
     // CONTINUE PAINT
@@ -283,46 +379,173 @@ public class ScreenPaintController : MonoBehaviour
         Vector2 screenPosition
     )
     {
-        if (currentPainter == null)
+        if (
+            currentPainter == null ||
+            arCamera == null
+        )
         {
             return;
         }
 
-        if (arCamera == null)
+        if (
+            IsPointerOverUI()
+        )
         {
             return;
         }
 
-        if (IsPointerOverUI())
+        if (
+            onlyPaintWhenMoving &&
+            hasPaintScreenPosition
+        )
         {
-            return;
+            float movement =
+                Vector2.Distance(
+                    screenPosition,
+                    lastPaintScreenPosition
+                );
+
+            if (
+                movement <
+                minimumPaintPixelMovement
+            )
+            {
+                return;
+            }
         }
 
-        Ray ray = arCamera.ScreenPointToRay(
+        // STORE NEW POSITION
+
+        lastPaintScreenPosition =
+            screenPosition;
+
+        hasPaintScreenPosition =
+            true;
+
+        // CREATE RAY
+
+        Ray ray =
+            arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        RaycastHit[] hits = Physics.RaycastAll(
+        // RAYCAST
+
+        int hitCount =
+            Physics.RaycastNonAlloc(
                 ray,
+                raycastHits,
                 rayDistance
             );
 
-        if (hits == null || hits.Length == 0)
+        if (hitCount <= 0)
         {
             return;
         }
 
-        System.Array.Sort(
-            hits,
-            (a, b) =>
-                a.distance.CompareTo(b.distance)
-        );
+        // FIND CLOSEST HIT BELONGING TO CURRENT MECCHA
 
-        foreach (RaycastHit hit in hits)
+        RaycastHit closestHit;
+
+        if (
+            !TryFindCurrentPainterHit(
+                hitCount,
+                out closestHit
+            )
+        )
         {
+            return;
+        }
+
+        if (
+            !TryCalculateHitUV(
+                closestHit,
+                out Vector2 uv
+            )
+        )
+        {
+            return;
+        }
+
+        // CONTINUE PAINT
+
+        currentPainter.ContinueStroke(
+            uv
+        );
+    }
+
+    // FIND PAINTABLE HIT
+
+    private bool TryFindPaintableHit(
+        int hitCount,
+        out RaycastHit closestHit
+    )
+    {
+        closestHit =
+            default;
+
+        bool foundHit =
+            false;
+
+        float closestDistance =
+            float.MaxValue;
+
+        for (
+            int i = 0;
+            i < hitCount;
+            i++
+        )
+        {
+            RaycastHit hit =
+                raycastHits[i];
+
+            if (
+                hit.collider == null
+            )
+            {
+                continue;
+            }
+
+            // CHECK COLOR SPHERE
+
+            ColorSphere colorSphere =
+                hit.collider
+                    .GetComponent<ColorSphere>();
+
+            if (colorSphere == null)
+            {
+                colorSphere =
+                    hit.collider
+                        .GetComponentInParent<
+                            ColorSphere>();
+            }
+
+            if (colorSphere != null)
+            {
+                if (
+                    hit.distance <
+                    closestDistance
+                )
+                {
+                    closestHit =
+                        hit;
+
+                    closestDistance =
+                        hit.distance;
+
+                    foundHit =
+                        true;
+                }
+
+                continue;
+            }
+
+            // CHECK MECCHA
+
             MecchaTexturePainter painter =
-                hit.collider.GetComponent<
-                    MecchaTexturePainter>();
+                hit.collider
+                    .GetComponent<
+                        MecchaTexturePainter>();
 
             if (painter == null)
             {
@@ -332,30 +555,115 @@ public class ScreenPaintController : MonoBehaviour
                             MecchaTexturePainter>();
             }
 
-            if (painter != currentPainter)
+            if (painter == null)
             {
                 continue;
             }
 
             if (
-                !TryCalculateHitUV(
-                    hit,
-                    out Vector2 uv
-                )
+                hit.distance <
+                closestDistance
             )
             {
-                return;
+                closestHit =
+                    hit;
+
+                closestDistance =
+                    hit.distance;
+
+                foundHit =
+                    true;
             }
-
-            currentPainter.ContinueStroke(
-                uv
-            );
-
-            return;
         }
+
+        if (logRaycastHits)
+        {
+            Debug.Log(
+                "[ScreenPaint] " +
+                "Raycast hits = " +
+                hitCount +
+                " | Paintable hit = " +
+                foundHit
+            );
+        }
+
+        return foundHit;
     }
 
-    // END TOUCH
+    // FIND CURRENT PAINTER HIT
+
+    private bool TryFindCurrentPainterHit(
+        int hitCount,
+        out RaycastHit closestHit
+    )
+    {
+        closestHit =
+            default;
+
+        bool foundHit =
+            false;
+
+        float closestDistance =
+            float.MaxValue;
+
+        for (
+            int i = 0;
+            i < hitCount;
+            i++
+        )
+        {
+            RaycastHit hit =
+                raycastHits[i];
+
+            if (
+                hit.collider == null
+            )
+            {
+                continue;
+            }
+
+            MecchaTexturePainter painter =
+                hit.collider
+                    .GetComponent<
+                        MecchaTexturePainter>();
+
+            if (painter == null)
+            {
+                painter =
+                    hit.collider
+                        .GetComponentInParent<
+                            MecchaTexturePainter>();
+            }
+
+            // ONLY ACCEPT CURRENT MECCHA
+
+            if (
+                painter != currentPainter
+            )
+            {
+                continue;
+            }
+
+            if (
+                hit.distance <
+                closestDistance
+            )
+            {
+                closestHit =
+                    hit;
+
+                closestDistance =
+                    hit.distance;
+
+                foundHit =
+                    true;
+            }
+        }
+
+        return foundHit;
+    }
+
+    // END PAINT
 
     private void EndPaint()
     {
@@ -365,6 +673,9 @@ public class ScreenPaintController : MonoBehaviour
 
             currentPainter = null;
         }
+
+        hasPaintScreenPosition =
+            false;
     }
 
     // COLOR SELECTION
@@ -373,18 +684,25 @@ public class ScreenPaintController : MonoBehaviour
         ColorSphere colorSphere
     )
     {
-        if (colorSphere == null)
+        if (
+            colorSphere == null
+        )
         {
             return;
         }
 
-        Color selectedColor = colorSphere.sphereColor;
+        Color selectedColor =
+            colorSphere.sphereColor;
 
-        if (PaintUIController.Instance != null)
+        if (
+            PaintUIController.Instance != null
+        )
         {
-            PaintUIController.Instance.UpdateChosenColor(
-                selectedColor
-            );
+            PaintUIController
+                .Instance
+                .UpdateChosenColor(
+                    selectedColor
+                );
         }
 
         Debug.Log(
@@ -393,38 +711,44 @@ public class ScreenPaintController : MonoBehaviour
         );
     }
 
-    // private void StartMecchaStroke(
-    // MecchaTexturePainter painter,
-    // Vector2 uv
-    // )
-
     // START MECCHA STROKE
+
     private void StartMecchaStroke(
         MecchaTexturePainter painter,
         Vector2 uv
     )
     {
-        if (painter == null)
+        if (
+            painter == null
+        )
         {
             return;
         }
 
-        if (PaintUIController.Instance == null)
+        if (
+            PaintUIController.Instance == null
+        )
         {
             return;
         }
 
-        currentPainter = painter;
+        currentPainter =
+            painter;
 
-        // GET SELECTED COLOR
+        // SELECTED COLOR
+
         Color selectedColor =
-            PaintUIController.Instance.CurrentChosenColor;
+            PaintUIController
+                .Instance
+                .CurrentChosenColor;
 
-        // GET SELECTED BRUSH THICKNESS
+        // BRUSH RADIUS
+
         int selectedBrushRadius =
-            PaintUIController.Instance.CurrentBrushRadius;
+            PaintUIController
+                .Instance
+                .CurrentBrushRadius;
 
-        // APPLY SETTINGS TO CURRENT MECCHA
         currentPainter.SetPaintColor(
             selectedColor
         );
@@ -433,123 +757,173 @@ public class ScreenPaintController : MonoBehaviour
             selectedBrushRadius
         );
 
-        // START STROKE
+        // BEGIN STROKE
+
         currentPainter.BeginStroke(
             uv
         );
 
-        Debug.Log(
-            "[ScreenPaint] Started Meccha stroke. " +
-            "Color = " +
-            selectedColor +
-            " | Brush Radius = " +
-            selectedBrushRadius
-        );
+        if (logRaycastHits)
+        {
+            Debug.Log(
+                "[ScreenPaint] Started Meccha stroke."
+            );
+        }
     }
 
-    // MANUAL UV CALCULATION
+    // UV CACHE
 
     private bool TryCalculateHitUV(
         RaycastHit hit,
         out Vector2 uv
     )
     {
-        uv = Vector2.zero;
+        uv =
+            Vector2.zero;
 
-        MeshCollider meshCollider = hit.collider as MeshCollider;
+        // MESH COLLIDER
 
-        if (meshCollider == null)
+        MeshCollider meshCollider =
+            hit.collider as MeshCollider;
+
+        if (
+            meshCollider == null
+        )
         {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "Collider is not a MeshCollider."
-            );
-
             return false;
         }
 
         Mesh mesh =
             meshCollider.sharedMesh;
 
-        if (mesh == null)
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "MeshCollider has no mesh."
-            );
-
-            return false;
-        }
-
-        int triangleIndex = hit.triangleIndex;
-
-        if (triangleIndex < 0)
-        {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "Invalid triangle index."
-            );
-
-            return false;
-        }
-
-        int[] triangles = mesh.triangles;
-
-        int triangleStart = triangleIndex * 3;
-
         if (
-            triangleStart + 2 >= triangles.Length
+            mesh == null
         )
         {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "Triangle index is outside mesh."
-            );
-
             return false;
         }
 
-        int vertexIndexA = triangles[triangleStart];
-        int vertexIndexB = triangles[triangleStart + 1];
-        int vertexIndexC = triangles[triangleStart + 2];
-
-        Vector2[] uvs = mesh.uv;
+        // GET CACHED MESH DATA
 
         if (
-            uvs == null || uvs.Length == 0
+            !meshUVCache.TryGetValue(
+                mesh,
+                out MeshUVData data
+            )
         )
         {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "Mesh has no UV0 coordinates."
-            );
+            data =
+                new MeshUVData();
 
-            return false;
+            data.triangles =
+                mesh.triangles;
+
+            data.uvs =
+                mesh.uv;
+
+            if (
+                data.triangles == null ||
+                data.triangles.Length == 0 ||
+                data.uvs == null ||
+                data.uvs.Length == 0
+            )
+            {
+                return false;
+            }
+
+            meshUVCache.Add(
+                mesh,
+                data
+            );
         }
+
+        // TRIANGLE INDEX
+
+        int triangleIndex =
+            hit.triangleIndex;
 
         if (
-            vertexIndexA >= uvs.Length ||
-            vertexIndexB >= uvs.Length ||
-            vertexIndexC >= uvs.Length
+            triangleIndex < 0
         )
         {
-            Debug.LogWarning(
-                "[ScreenPaint] " +
-                "UV array does not contain " +
-                "triangle vertices."
-            );
-
             return false;
         }
 
-        Vector2 uvA = uvs[vertexIndexA];
-        Vector2 uvB = uvs[vertexIndexB];
-        Vector2 uvC = uvs[vertexIndexC];
-        Vector3 bary = hit.barycentricCoordinate;
+        int triangleStart =
+            triangleIndex * 3;
 
-        uv = uvA * bary.x + uvB * bary.y + uvC * bary.z;
-        uv.x = Mathf.Clamp01(uv.x);
-        uv.y = Mathf.Clamp01(uv.y);
+        if (
+            triangleStart + 2 >=
+            data.triangles.Length
+        )
+        {
+            return false;
+        }
+
+        // VERTICES
+
+        int vertexIndexA =
+            data.triangles[
+                triangleStart
+            ];
+
+        int vertexIndexB =
+            data.triangles[
+                triangleStart + 1
+            ];
+
+        int vertexIndexC =
+            data.triangles[
+                triangleStart + 2
+            ];
+
+        // UV INDEX CHECK
+
+        if (
+            vertexIndexA >= data.uvs.Length ||
+            vertexIndexB >= data.uvs.Length ||
+            vertexIndexC >= data.uvs.Length
+        )
+        {
+            return false;
+        }
+
+        // UV VALUES
+
+        Vector2 uvA =
+            data.uvs[
+                vertexIndexA
+            ];
+
+        Vector2 uvB =
+            data.uvs[
+                vertexIndexB
+            ];
+
+        Vector2 uvC =
+            data.uvs[
+                vertexIndexC
+            ];
+
+        // BARYCENTRIC COORDINATES
+
+        Vector3 bary =
+            hit.barycentricCoordinate;
+
+        uv =
+            uvA * bary.x +
+            uvB * bary.y +
+            uvC * bary.z;
+
+        uv.x =
+            Mathf.Clamp01(
+                uv.x
+            );
+
+        uv.y =
+            Mathf.Clamp01(
+                uv.y
+            );
 
         return true;
     }
@@ -558,12 +932,15 @@ public class ScreenPaintController : MonoBehaviour
 
     private bool IsPointerOverUI()
     {
-        if (EventSystem.current == null)
+        if (
+            EventSystem.current == null
+        )
         {
             return false;
         }
 
-        return EventSystem.current
+        return EventSystem
+            .current
             .IsPointerOverGameObject();
     }
 }

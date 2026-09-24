@@ -3,37 +3,65 @@ using UnityEngine;
 public class MecchaTexturePainter : MonoBehaviour
 {
     [Header("Meccha Renderer")]
-    [SerializeField] private SkinnedMeshRenderer targetRenderer;
+    [SerializeField]
+    private SkinnedMeshRenderer targetRenderer;
+
+    // PAINT TEXTURE
 
     [Header("Paint Texture")]
-    [SerializeField] private int textureWidth = 1024;
-    [SerializeField] private int textureHeight = 1024;
+    [SerializeField]
+    private int textureWidth = 1024;
+
+    [SerializeField]
+    private int textureHeight = 1024;
+
+    // BRUSH
 
     [Header("Brush")]
-    [SerializeField] private int brushRadius = 20;
+    [SerializeField]
+    private int brushRadius = 20;
+
+    // PERFORMANCE
+
+    [Header("Painting Performance")]
+
+    [Tooltip(
+        "How often the modified texture is uploaded to the GPU."
+    )]
+    [SerializeField]
+    private float textureApplyInterval = 0.05f;
+
+    [Tooltip(
+        "Automatically apply the texture when a stroke ends."
+    )]
+    [SerializeField]
+    private bool applyTextureWhenStrokeEnds = true;
 
     [Header("Debug")]
-    [SerializeField] private bool logPaintInfo = true;
+    [SerializeField]
+    private bool logPaintInfo = false;
+
+    // INTERNAL STATE
 
     private Texture2D paintTexture;
     private Material runtimeMaterial;
-
     private Color currentPaintColor = Color.red;
-
     private Vector2? previousUV = null;
 
-    public Texture2D PaintTexture =>
-        paintTexture;
+    // TEXTURE APPLY STATE
 
-    public int CurrentBrushRadius =>
-        brushRadius;
+    private float timeSinceLastApply = 0f;
+    private bool textureDirty = false;
 
     private void Awake()
     {
+        // FIND RENDERER
+
         if (targetRenderer == null)
         {
             targetRenderer =
-                GetComponent<SkinnedMeshRenderer>();
+                GetComponent<
+                    SkinnedMeshRenderer>();
         }
 
         if (targetRenderer == null)
@@ -48,7 +76,36 @@ public class MecchaTexturePainter : MonoBehaviour
         }
 
         InitializeRuntimeMaterial();
+
         InitializePaintTexture();
+    }
+
+    // UPDATE
+
+    private void Update()
+    {
+        if (!textureDirty)
+        {
+            return;
+        }
+
+        if (textureApplyInterval <= 0f)
+        {
+            ApplyPaintTexture();
+
+            return;
+        }
+
+        timeSinceLastApply +=
+            Time.deltaTime;
+
+        if (
+            timeSinceLastApply >=
+            textureApplyInterval
+        )
+        {
+            ApplyPaintTexture();
+        }
     }
 
     // MATERIAL
@@ -60,7 +117,10 @@ public class MecchaTexturePainter : MonoBehaviour
             return;
         }
 
-        if (targetRenderer.sharedMaterial == null)
+        if (
+            targetRenderer.sharedMaterial ==
+            null
+        )
         {
             Debug.LogError(
                 "[MecchaPainter] " +
@@ -70,7 +130,8 @@ public class MecchaTexturePainter : MonoBehaviour
             return;
         }
 
-        // Create a runtime copy of the original
+        // CREATE RUNTIME MATERIAL
+
         runtimeMaterial =
             new Material(
                 targetRenderer.sharedMaterial
@@ -93,6 +154,8 @@ public class MecchaTexturePainter : MonoBehaviour
             return;
         }
 
+        // CREATE TEXTURE
+
         paintTexture =
             new Texture2D(
                 textureWidth,
@@ -110,11 +173,21 @@ public class MecchaTexturePainter : MonoBehaviour
         paintTexture.filterMode =
             FilterMode.Bilinear;
 
-        Color[] pixels =
-            new Color[
+        // CREATE WHITE PIXEL ARRAY
+
+        Color32[] pixels =
+            new Color32[
                 textureWidth *
                 textureHeight
             ];
+
+        Color32 white =
+            new Color32(
+                255,
+                255,
+                255,
+                255
+            );
 
         for (
             int i = 0;
@@ -122,11 +195,21 @@ public class MecchaTexturePainter : MonoBehaviour
             i++
         )
         {
-            pixels[i] = Color.white;
+            pixels[i] =
+                white;
         }
 
-        paintTexture.SetPixels(pixels);
-        paintTexture.Apply();
+        // INITIALISE
+
+        paintTexture.SetPixels32(
+            pixels
+        );
+
+        paintTexture.Apply(
+            false
+        );
+
+        // ASSIGN TO MATERIAL
 
         runtimeMaterial.SetTexture(
             "_BaseMap",
@@ -142,7 +225,7 @@ public class MecchaTexturePainter : MonoBehaviour
         );
     }
 
-    // COLOR
+    // PAINT COLOR
 
     public void SetPaintColor(
         Color newColor
@@ -151,13 +234,17 @@ public class MecchaTexturePainter : MonoBehaviour
         currentPaintColor =
             newColor;
 
-        Debug.Log(
-            "[MecchaPainter] Paint color = " +
-            currentPaintColor
-        );
+        if (logPaintInfo)
+        {
+            Debug.Log(
+                "[MecchaPainter] " +
+                "Paint color = " +
+                currentPaintColor
+            );
+        }
     }
 
-    // BRUSH SIZE
+    // BRUSH RADIUS
 
     public void SetBrushRadius(
         int newRadius
@@ -169,13 +256,17 @@ public class MecchaTexturePainter : MonoBehaviour
                 newRadius
             );
 
-        Debug.Log(
-            "[MecchaPainter] Brush radius = " +
-            brushRadius
-        );
+        if (logPaintInfo)
+        {
+            Debug.Log(
+                "[MecchaPainter] " +
+                "Brush radius = " +
+                brushRadius
+            );
+        }
     }
 
-    // SINGLE DOT
+    // PAINT SINGLE POINT
 
     public void PaintAtUV(
         Vector2 uv
@@ -212,17 +303,7 @@ public class MecchaTexturePainter : MonoBehaviour
             pixelX,
             pixelY
         );
-
-        paintTexture.Apply();
-
-        if (logPaintInfo)
-        {
-            Debug.Log(
-                "[MecchaPainter] " +
-                "Painted UV = " +
-                uv
-            );
-        }
+        textureDirty = true;
     }
 
     // DRAW BRUSH
@@ -232,6 +313,11 @@ public class MecchaTexturePainter : MonoBehaviour
         int centerY
     )
     {
+        if (paintTexture == null)
+        {
+            return;
+        }
+
         int radius =
             Mathf.Max(
                 1,
@@ -266,44 +352,49 @@ public class MecchaTexturePainter : MonoBehaviour
                 centerY + radius
             );
 
+        Color32 paintColor =
+            currentPaintColor;
+
+        // DRAW
+
         for (
-            int x = minX;
-            x <= maxX;
-            x++
+            int y = minY;
+            y <= maxY;
+            y++
         )
         {
+            int dy =
+                y - centerY;
+
+            int dySquared =
+                dy * dy;
+
             for (
-                int y = minY;
-                y <= maxY;
-                y++
+                int x = minX;
+                x <= maxX;
+                x++
             )
             {
                 int dx =
                     x - centerX;
 
-                int dy =
-                    y - centerY;
-
-                int distanceSquared =
-                    dx * dx +
-                    dy * dy;
-
                 if (
-                    distanceSquared <=
+                    dx * dx +
+                    dySquared <=
                     radiusSquared
                 )
                 {
                     paintTexture.SetPixel(
                         x,
                         y,
-                        currentPaintColor
+                        paintColor
                     );
                 }
             }
         }
     }
 
-    // DRAW LINE
+    // PAINT LINE
 
     public void PaintLine(
         Vector2 startUV,
@@ -374,11 +465,10 @@ public class MecchaTexturePainter : MonoBehaviour
                 pixelY
             );
         }
-
-        paintTexture.Apply();
+        textureDirty = true;
     }
 
-    // STROKE
+    // BEGIN STROKE
 
     public void BeginStroke(
         Vector2 uv
@@ -386,17 +476,22 @@ public class MecchaTexturePainter : MonoBehaviour
     {
         previousUV =
             uv;
-
         PaintAtUV(
             uv
         );
+        timeSinceLastApply =
+            0f;
     }
+
+    // CONTINUE STROKE
 
     public void ContinueStroke(
         Vector2 uv
     )
     {
-        if (!previousUV.HasValue)
+        if (
+            !previousUV.HasValue
+        )
         {
             BeginStroke(
                 uv
@@ -414,10 +509,45 @@ public class MecchaTexturePainter : MonoBehaviour
             uv;
     }
 
+    // END STROKE
+
     public void EndStroke()
     {
         previousUV =
             null;
+
+        // APPLY FINAL PAINT IMMEDIATELY
+
+        if (
+            applyTextureWhenStrokeEnds &&
+            textureDirty
+        )
+        {
+            ApplyPaintTexture();
+        }
+    }
+
+    // APPLY PAINT TEXTURE
+
+    private void ApplyPaintTexture()
+    {
+        if (
+            paintTexture == null ||
+            !textureDirty
+        )
+        {
+            return;
+        }
+
+        paintTexture.Apply(
+            false
+        );
+
+        textureDirty =
+            false;
+
+        timeSinceLastApply =
+            0f;
     }
 
     // CLEANUP

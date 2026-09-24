@@ -44,6 +44,10 @@ public class SinglePhoneGameController : MonoBehaviour
     public ARPlaneManager arPlaneManager;
     public GameObject handTrackingCanvas;
 
+    [Header("MediaPipe Hand Tracking")]
+    [SerializeField]
+    private GameObject mediaPipeHandManager;
+
     public GamePhase CurrentPhase { get; private set; }
 
     private Coroutine gameCoroutine;
@@ -88,6 +92,9 @@ public class SinglePhoneGameController : MonoBehaviour
 
         if (arPlaneManager != null)
             arPlaneManager.enabled = true;
+
+        if (mediaPipeHandManager != null)
+            mediaPipeHandManager.SetActive(false);
 
         if (handTrackingCanvas != null)
             handTrackingCanvas.SetActive(false);
@@ -176,6 +183,9 @@ public class SinglePhoneGameController : MonoBehaviour
         if (arPlaneManager != null)
             arPlaneManager.enabled = false;
 
+        if (mediaPipeHandManager != null)
+            mediaPipeHandManager.SetActive(true);
+
         if (handTrackingCanvas != null)
             handTrackingCanvas.SetActive(true);
 
@@ -246,6 +256,9 @@ public class SinglePhoneGameController : MonoBehaviour
 
         if (hunterSwitchPanel != null)
             hunterSwitchPanel.SetActive(false);
+
+        if (mediaPipeHandManager != null)
+            mediaPipeHandManager.SetActive(false);
 
         if (handTrackingCanvas != null)
             handTrackingCanvas.SetActive(false);

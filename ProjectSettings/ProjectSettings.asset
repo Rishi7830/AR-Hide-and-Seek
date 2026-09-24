@@ -839,7 +839,8 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    iPhone: UNITY_XR_ARKIT_LOADER_ENABLED
+    Android: FUSION_WEAVER;FUSION2;FUSION_2;FUSION_2_0;FUSION_2_0_13;FUSION_2_OR_NEWER;FUSION_2_0_OR_NEWER;FUSION_LOGLEVEL_INFO
+    iPhone: UNITY_XR_ARKIT_LOADER_ENABLED;FUSION_WEAVER;FUSION2;FUSION_2;FUSION_2_0;FUSION_2_0_13;FUSION_2_OR_NEWER;FUSION_2_0_OR_NEWER;FUSION_LOGLEVEL_INFO
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

@@ -379,8 +379,10 @@ MonoBehaviour:
   targetRenderer: {fileID: 342703144426162166}
   textureWidth: 1024
   textureHeight: 1024
-  brushRadius: 25
-  logPaintInfo: 1
+  brushRadius: 20
+  textureApplyInterval: 0.05
+  applyTextureWhenStrokeEnds: 1
+  logPaintInfo: 0
 --- !u!1 &838906132019361580
 GameObject:
   m_ObjectHideFlags: 0
@@ -641,6 +643,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HunterMecchaTarget
   hitColor: {r: 1, g: 0, b: 0, a: 1}
+  revealRedColor: {r: 1, g: 0, b: 0, a: 1}
+  revealWhiteColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &2372834175558222101
 GameObject:
   m_ObjectHideFlags: 0

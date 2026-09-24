@@ -2,24 +2,16 @@ using UnityEngine;
 
 public class HunterMecchaTarget : MonoBehaviour
 {
-    // =============================================================
-    // TARGET SETTINGS
-    // =============================================================
-
     [Header("Target Settings")]
-
     [Tooltip(
         "Colour applied to the Meccha when it is shot."
     )]
     [SerializeField]
     private Color hitColor = Color.red;
 
-    // =============================================================
     // REVEAL SETTINGS
-    // =============================================================
 
     [Header("Reveal Phase")]
-
     [Tooltip(
         "Colour used during the reveal pulse."
     )]
@@ -32,38 +24,21 @@ public class HunterMecchaTarget : MonoBehaviour
     [SerializeField]
     private Color revealWhiteColor = Color.white;
 
-    // =============================================================
     // INTERNAL STATE
-    // =============================================================
 
     private Renderer[] mecchaRenderers;
-
     private Material[][] originalMaterials;
-
     private bool alreadyHit = false;
-
     private bool revealActive = false;
-
-    // =============================================================
-    // AWAKE
-    // =============================================================
 
     private void Awake()
     {
-        // ---------------------------------------------------------
-        // FIND ALL RENDERERS
-        //
-        // Includes SkinnedMeshRenderer.
-        // ---------------------------------------------------------
-
         mecchaRenderers =
             GetComponentsInChildren<Renderer>(
                 true
             );
 
-        // ---------------------------------------------------------
         // SAVE ORIGINAL MATERIALS
-        // ---------------------------------------------------------
 
         originalMaterials =
             new Material[mecchaRenderers.Length][];
@@ -87,16 +62,10 @@ public class HunterMecchaTarget : MonoBehaviour
         }
     }
 
-    // =============================================================
     // SHOT
-    // =============================================================
 
     public bool OnShot()
     {
-        // ---------------------------------------------------------
-        // DON'T PROCESS SAME MECCHA TWICE
-        // ---------------------------------------------------------
-
         if (alreadyHit)
         {
             return false;
@@ -105,16 +74,8 @@ public class HunterMecchaTarget : MonoBehaviour
         alreadyHit =
             true;
 
-        // ---------------------------------------------------------
-        // STOP REVEAL EFFECT
-        // ---------------------------------------------------------
-
         revealActive =
             false;
-
-        // ---------------------------------------------------------
-        // TURN RED
-        // ---------------------------------------------------------
 
         MakeRed();
 
@@ -125,9 +86,7 @@ public class HunterMecchaTarget : MonoBehaviour
         return true;
     }
 
-    // =============================================================
     // MAKE RED
-    // =============================================================
 
     private void MakeRed()
     {
@@ -174,17 +133,11 @@ public class HunterMecchaTarget : MonoBehaviour
         }
     }
 
-    // =============================================================
     // START REVEAL PULSE
-    // =============================================================
 
     public void StartRevealPulse()
     {
-        // ---------------------------------------------------------
-        // ALREADY SHOT
-        //
-        // Shot Mecchas must NOT participate in the reveal.
-        // ---------------------------------------------------------
+        // ALREADY SHOT Mecchas must NOT participate in the reveal.
 
         if (alreadyHit)
         {
@@ -199,9 +152,7 @@ public class HunterMecchaTarget : MonoBehaviour
         );
     }
 
-    // =============================================================
     // UPDATE REVEAL PULSE
-    // =============================================================
 
     public void UpdateRevealPulse(
         float pulseValue
@@ -215,14 +166,9 @@ public class HunterMecchaTarget : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // pulseValue:
-        //
         // 0 = white
         // 1 = red
-        //
-        // Smoothly interpolate between the two.
-        // ---------------------------------------------------------
 
         Color pulseColor =
             Color.Lerp(
@@ -236,9 +182,7 @@ public class HunterMecchaTarget : MonoBehaviour
         );
     }
 
-    // =============================================================
     // SET REVEAL COLOUR
-    // =============================================================
 
     private void SetRevealColor(
         Color color
@@ -287,19 +231,13 @@ public class HunterMecchaTarget : MonoBehaviour
         }
     }
 
-    // =============================================================
     // SET MATERIAL COLOUR
-    // =============================================================
 
     private void SetMaterialColor(
         Material material,
         Color color
     )
     {
-        // ---------------------------------------------------------
-        // URP
-        // ---------------------------------------------------------
-
         if (
             material.HasProperty(
                 "_BaseColor"
@@ -312,9 +250,7 @@ public class HunterMecchaTarget : MonoBehaviour
             );
         }
 
-        // ---------------------------------------------------------
         // STANDARD / OLDER SHADERS
-        // ---------------------------------------------------------
 
         if (
             material.HasProperty(
@@ -329,9 +265,7 @@ public class HunterMecchaTarget : MonoBehaviour
         }
     }
 
-    // =============================================================
     // END REVEAL
-    // =============================================================
 
     public void EndRevealPulse()
     {
@@ -346,9 +280,7 @@ public class HunterMecchaTarget : MonoBehaviour
         RestoreOriginalMaterials();
     }
 
-    // =============================================================
     // RESET TARGET
-    // =============================================================
 
     public void ResetTarget()
     {
@@ -365,9 +297,7 @@ public class HunterMecchaTarget : MonoBehaviour
         );
     }
 
-    // =============================================================
     // RESTORE ORIGINAL MATERIALS
-    // =============================================================
 
     private void RestoreOriginalMaterials()
     {
@@ -396,9 +326,7 @@ public class HunterMecchaTarget : MonoBehaviour
         }
     }
 
-    // =============================================================
     // CHECK HIT
-    // =============================================================
 
     public bool IsHit()
     {

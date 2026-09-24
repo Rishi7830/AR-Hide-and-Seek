@@ -10,43 +10,71 @@ public class MecchaFineTuneController : MonoBehaviour
     [Header("UI Panel Reference")]
     public GameObject fineTunePanel;
 
-    [Header("Sensitivity UI")]
-    [SerializeField] private Slider movementSensitivitySlider;
-    [SerializeField] private Slider rotationSensitivitySlider;
+    // SENSITIVITY UI
 
-    [SerializeField] private TMP_Text movementText;
-    [SerializeField] private TMP_Text rotationText;
+    [Header("Sensitivity UI")]
+    [SerializeField]
+    private Slider movementSensitivitySlider;
+    [SerializeField]
+    private Slider rotationSensitivitySlider;
+    [SerializeField]
+    private TMP_Text movementText;
+    [SerializeField]
+    private TMP_Text rotationText;
+
+    // SENSITIVITY SETTINGS
 
     [Header("Sensitivity Settings")]
-    [SerializeField] private int defaultMovementSensitivity = 10;
-    [SerializeField] private int defaultRotationSensitivity = 10;
-
-    [SerializeField] private int minSensitivity = 1;
-    [SerializeField] private int maxSensitivity = 20;
+    [SerializeField]
+    private int defaultMovementSensitivity = 10;
+    [SerializeField]
+    private int defaultRotationSensitivity = 10;
+    [SerializeField]
+    private int minSensitivity = 1;
+    [SerializeField]
+    private int maxSensitivity = 20;
 
     [Header("Default Fine-Tune Values")]
     [Tooltip(
-        "Movement distance at the default sensitivity of 10."
+        "Movement distance at sensitivity 10."
     )]
-    [SerializeField] private float defaultMovementStep = 0.05f;
-
+    [SerializeField]
+    private float defaultMovementStep = 0.05f;
     [Tooltip(
-        "Rotation angle at the default sensitivity of 10."
+        "Rotation angle at sensitivity 10."
     )]
-    [SerializeField] private float defaultRotationAngle = 15f;
-
+    [SerializeField]
+    private float defaultRotationAngle = 15f;
     [Header("AR Camera Reference")]
     public Transform arCameraTransform;
     public ARRaycastManager raycastManager;
     public ARAnchorManager anchorManager;
 
+    // FEEDBACK MATERIALS
+
     [Header("Feedback Materials")]
     public Material validMaterial;
     public Material invalidMaterial;
 
+    // PLACEMENT VALIDATION
+
+    [Header("Placement Validation")]
+    [Tooltip(
+        "Maximum distance between any sampled part of the Meccha " +
+        "and an AR plane for placement to be valid."
+    )]
+    [SerializeField]
+    private float validPlacementDistance = 0.05f;
+    [Tooltip(
+        "Maximum distance to search downward for an AR plane."
+    )]
+    //[SerializeField]
+    //private float planeSearchDistance = 0.20f;
+
+    // TARGET
+
     [Header("Target & Current Tuning Values")]
     public GameObject currentMeccha;
-
     public float stepDistance = 0.05f;
     public float rotationAngle = 15f;
 
@@ -55,20 +83,23 @@ public class MecchaFineTuneController : MonoBehaviour
     private Dictionary<Renderer, Material[]> originalMaterials =
         new Dictionary<Renderer, Material[]>();
 
-    private bool isFineTuningActive = false;
+    // STATE
 
+    private bool isFineTuningActive = false;
+    private bool lastPlacementWasValid = false;
+    private bool placementStateInitialized = false;
     private static List<ARRaycastHit> s_Hits =
         new List<ARRaycastHit>();
 
+    private Renderer[] cachedMecchaRenderers;
+
     private void Start()
     {
-        // Fine tune panel starts hidden.
         if (fineTunePanel != null)
         {
             fineTunePanel.SetActive(false);
         }
 
-        // Find camera automatically if not assigned.
         if (
             arCameraTransform == null &&
             Camera.main != null
@@ -78,14 +109,16 @@ public class MecchaFineTuneController : MonoBehaviour
                 Camera.main.transform;
         }
 
-        // Find raycast manager automatically if not assigned.
+        // FIND RAYCAST MANAGER
+
         if (raycastManager == null)
         {
             raycastManager =
-                FindFirstObjectByType<ARRaycastManager>();
+                FindFirstObjectByType<
+                    ARRaycastManager>();
         }
 
-        // SETUP MOVEMENT SLIDER
+        // MOVEMENT SLIDER
 
         if (movementSensitivitySlider != null)
         {
@@ -107,7 +140,7 @@ public class MecchaFineTuneController : MonoBehaviour
                 );
         }
 
-        // SETUP ROTATION SLIDER
+        // ROTATION SLIDER
 
         if (rotationSensitivitySlider != null)
         {
@@ -129,8 +162,6 @@ public class MecchaFineTuneController : MonoBehaviour
                 );
         }
 
-        // APPLY DEFAULT VALUES
-
         UpdateMovementStep(
             defaultMovementSensitivity
         );
@@ -148,7 +179,22 @@ public class MecchaFineTuneController : MonoBehaviour
         );
     }
 
-    // CLEANUP LISTENERS
+    // UPDATE
+
+    private void Update()
+    {
+        if (
+            !isFineTuningActive ||
+            currentMeccha == null
+        )
+        {
+            return;
+        }
+
+        UpdatePlacementStatusFeedback();
+    }
+
+    // DESTROY
 
     private void OnDestroy()
     {
@@ -171,25 +217,40 @@ public class MecchaFineTuneController : MonoBehaviour
 
     // TARGET MECCHA
 
-    public void SetTargetMeccha(GameObject meccha)
+    public void SetTargetMeccha(
+        GameObject meccha
+    )
     {
-        if (currentMeccha == meccha)
+        if (
+            currentMeccha == meccha
+        )
+        {
             return;
+        }
 
-        // Reset materials on previous target.
         if (currentMeccha != null)
         {
             RestoreOriginalMaterials();
         }
 
-        currentMeccha = meccha;
+        currentMeccha =
+            meccha;
+
+        cachedMecchaRenderers =
+            null;
+
+        placementStateInitialized =
+            false;
 
         if (currentMeccha == null)
         {
-            isFineTuningActive = false;
+            isFineTuningActive =
+                false;
 
             if (fineTunePanel != null)
+            {
                 fineTunePanel.SetActive(false);
+            }
 
             return;
         }
@@ -197,6 +258,9 @@ public class MecchaFineTuneController : MonoBehaviour
         if (isFineTuningActive)
         {
             CacheOriginalMaterials();
+
+            CacheMecchaRenderers();
+
             UpdatePlacementStatusFeedback();
         }
     }
@@ -205,21 +269,25 @@ public class MecchaFineTuneController : MonoBehaviour
 
     public void ToggleFineTunePanel()
     {
-        if (fineTunePanel != null)
+        if (fineTunePanel == null)
         {
-            bool isActive =
-                !fineTunePanel.activeSelf;
+            return;
+        }
 
-            if (isActive)
-            {
-                OpenFineTunePanel();
-            }
-            else
-            {
-                CloseFineTunePanel();
-            }
+        bool isActive =
+            !fineTunePanel.activeSelf;
+
+        if (isActive)
+        {
+            OpenFineTunePanel();
+        }
+        else
+        {
+            CloseFineTunePanel();
         }
     }
+
+    // OPEN
 
     public void OpenFineTunePanel()
     {
@@ -228,18 +296,28 @@ public class MecchaFineTuneController : MonoBehaviour
             fineTunePanel.SetActive(true);
         }
 
-        isFineTuningActive = true;
+        isFineTuningActive =
+            true;
+
+        placementStateInitialized =
+            false;
 
         if (currentMeccha != null)
         {
             CacheOriginalMaterials();
+
+            CacheMecchaRenderers();
+
             UpdatePlacementStatusFeedback();
         }
     }
 
+    // CLOSE
+
     public void CloseFineTunePanel()
     {
-        isFineTuningActive = false;
+        isFineTuningActive =
+            false;
 
         if (fineTunePanel != null)
         {
@@ -248,16 +326,15 @@ public class MecchaFineTuneController : MonoBehaviour
 
         RestoreOriginalMaterials();
 
-        // IMPORTANT: Do NOT destroy or recreate the ARAnchor. The Meccha remains anchored.
+        placementStateInitialized =
+            false;
 
         if (currentMeccha != null)
         {
             Debug.Log(
                 "Fine tuning closed. Meccha remains anchored. " +
                 "Position: " +
-                currentMeccha.transform.position +
-                " | Local Position: " +
-                currentMeccha.transform.localPosition
+                currentMeccha.transform.position
             );
         }
     }
@@ -288,6 +365,8 @@ public class MecchaFineTuneController : MonoBehaviour
         );
     }
 
+    // UPDATE MOVEMENT STEP
+
     private void UpdateMovementStep(
         int sensitivity
     )
@@ -300,6 +379,8 @@ public class MecchaFineTuneController : MonoBehaviour
             defaultMovementStep *
             multiplier;
     }
+
+    // MOVEMENT TEXT
 
     private void UpdateMovementText(
         int sensitivity
@@ -339,6 +420,8 @@ public class MecchaFineTuneController : MonoBehaviour
         );
     }
 
+    // UPDATE ROTATION ANGLE
+
     private void UpdateRotationAngle(
         int sensitivity
     )
@@ -352,6 +435,8 @@ public class MecchaFineTuneController : MonoBehaviour
             multiplier;
     }
 
+    // ROTATION TEXT
+
     private void UpdateRotationText(
         int sensitivity
     )
@@ -364,38 +449,66 @@ public class MecchaFineTuneController : MonoBehaviour
         }
     }
 
-    // MATERIAL CACHE
+    // CACHE ORIGINAL MATERIALS
 
     private void CacheOriginalMaterials()
     {
         originalMaterials.Clear();
 
         if (currentMeccha == null)
+        {
             return;
+        }
 
         Renderer[] renderers =
             currentMeccha
-                .GetComponentsInChildren<Renderer>(true);
+                .GetComponentsInChildren<
+                    Renderer>(
+                    true
+                );
 
-        foreach (Renderer r in renderers)
+        foreach (
+            Renderer renderer
+            in renderers
+        )
         {
-            if (r != null)
+            if (renderer != null)
             {
-                originalMaterials[r] =
-                    r.sharedMaterials;
+                originalMaterials[renderer] =
+                    renderer.sharedMaterials;
             }
         }
     }
 
-    // RESTORE MATERIALS
+    // CACHE RENDERERS
+
+    private void CacheMecchaRenderers()
+    {
+        if (currentMeccha == null)
+        {
+            cachedMecchaRenderers =
+                null;
+
+            return;
+        }
+
+        cachedMecchaRenderers =
+            currentMeccha
+                .GetComponentsInChildren<
+                    Renderer>(
+                    true
+                );
+    }
+
+    // RESTORE ORIGINAL MATERIALS
 
     private void RestoreOriginalMaterials()
     {
-        if (currentMeccha == null)
-            return;
-
         foreach (
-            KeyValuePair<Renderer, Material[]> entry
+            KeyValuePair<
+                Renderer,
+                Material[]
+            > entry
             in originalMaterials
         )
         {
@@ -419,45 +532,70 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             targetMat == null
         )
-            return;
-
-        Renderer[] renderers =
-            currentMeccha
-                .GetComponentsInChildren<Renderer>(true);
-
-        foreach (Renderer r in renderers)
         {
-            if (r != null)
+            return;
+        }
+
+        if (cachedMecchaRenderers == null)
+        {
+            CacheMecchaRenderers();
+        }
+
+        foreach (
+            Renderer renderer
+            in cachedMecchaRenderers
+        )
+        {
+            if (renderer == null)
             {
-                Material[] matArray =
-                    new Material[
-                        r.sharedMaterials.Length
-                    ];
-
-                for (
-                    int i = 0;
-                    i < matArray.Length;
-                    i++
-                )
-                {
-                    matArray[i] =
-                        targetMat;
-                }
-
-                r.materials =
-                    matArray;
+                continue;
             }
+
+            Material[] materials =
+                renderer.materials;
+
+            for (
+                int i = 0;
+                i < materials.Length;
+                i++
+            )
+            {
+                materials[i] =
+                    targetMat;
+            }
+
+            renderer.materials =
+                materials;
         }
     }
 
-    // PLACEMENT FEEDBACK
+    // UPDATE PLACEMENT FEEDBACK
 
     private void UpdatePlacementStatusFeedback()
     {
-        bool isOnPlane =
+        bool isValid =
             CheckIfMecchaIsOnPlane();
 
-        if (isOnPlane)
+        // ONLY CHANGE MATERIAL WHEN STATE CHANGES
+
+        if (
+            placementStateInitialized &&
+            isValid ==
+            lastPlacementWasValid
+        )
+        {
+            return;
+        }
+
+        placementStateInitialized =
+            true;
+
+        lastPlacementWasValid =
+            isValid;
+
+        // APPLY FEEDBACK
+
+        if (isValid)
         {
             ApplySingleMaterialToTarget(
                 validMaterial
@@ -469,56 +607,200 @@ public class MecchaFineTuneController : MonoBehaviour
                 invalidMaterial
             );
         }
+
+        Debug.Log(
+            "[FineTune] Placement = " +
+            (isValid ? "VALID" : "INVALID")
+        );
     }
 
-    // CHECK PLANE
+    // CHECK MECCHA PLACEMENT
 
     private bool CheckIfMecchaIsOnPlane()
     {
         if (
-            raycastManager == null ||
-            currentMeccha == null
-        )
-            return false;
-
-        Vector3 rayOrigin =
-            currentMeccha.transform.position +
-            Vector3.up * 0.1f;
-
-        Ray ray = new Ray(
-            rayOrigin,
-            Vector3.down
-        );
-
-        float rayLength =
-            0.15f;
-
-        if (
-            raycastManager.Raycast(
-                ray,
-                s_Hits,
-                TrackableType.Planes
-            )
+            currentMeccha == null ||
+            raycastManager == null
         )
         {
-            if (
-                s_Hits[0].distance <=
-                rayLength
+            return false;
+        }
+
+        if (cachedMecchaRenderers == null)
+        {
+            CacheMecchaRenderers();
+        }
+
+        if (
+            cachedMecchaRenderers == null ||
+            cachedMecchaRenderers.Length == 0
+        )
+        {
+            return false;
+        }
+
+        bool hasBounds = false;
+
+        Bounds mecchaBounds =
+            new Bounds(
+                currentMeccha.transform.position,
+                Vector3.zero
+            );
+
+        foreach (
+            Renderer renderer
+            in cachedMecchaRenderers
+        )
+        {
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                mecchaBounds =
+                    renderer.bounds;
+
+                hasBounds = true;
+            }
+            else
+            {
+                mecchaBounds.Encapsulate(
+                    renderer.bounds
+                );
+            }
+        }
+
+        if (!hasBounds)
+        {
+            return false;
+        }
+
+        // Sample important points around the Meccha.
+        Vector3[] samplePoints =
+        {
+        mecchaBounds.center,
+
+        new Vector3(
+            mecchaBounds.min.x,
+            mecchaBounds.min.y,
+            mecchaBounds.min.z
+        ),
+
+        new Vector3(
+            mecchaBounds.min.x,
+            mecchaBounds.min.y,
+            mecchaBounds.max.z
+        ),
+
+        new Vector3(
+            mecchaBounds.max.x,
+            mecchaBounds.min.y,
+            mecchaBounds.min.z
+        ),
+
+        new Vector3(
+            mecchaBounds.max.x,
+            mecchaBounds.min.y,
+            mecchaBounds.max.z
+        ),
+
+        new Vector3(
+            mecchaBounds.center.x,
+            mecchaBounds.min.y,
+            mecchaBounds.center.z
+        ),
+
+        new Vector3(
+            mecchaBounds.center.x,
+            mecchaBounds.max.y,
+            mecchaBounds.center.z
+        ),
+
+        new Vector3(
+            mecchaBounds.min.x,
+            mecchaBounds.center.y,
+            mecchaBounds.center.z
+        ),
+
+        new Vector3(
+            mecchaBounds.max.x,
+            mecchaBounds.center.y,
+            mecchaBounds.center.z
+        ),
+
+        new Vector3(
+            mecchaBounds.center.x,
+            mecchaBounds.center.y,
+            mecchaBounds.min.z
+        ),
+
+        new Vector3(
+            mecchaBounds.center.x,
+            mecchaBounds.center.y,
+            mecchaBounds.max.z
+        )
+    };
+
+        // Test from each sample point in all 6 world directions.
+        Vector3[] directions =
+        {
+        Vector3.up,
+        Vector3.down,
+        Vector3.left,
+        Vector3.right,
+        Vector3.forward,
+        Vector3.back
+    };
+
+        foreach (
+            Vector3 point
+            in samplePoints
+        )
+        {
+            foreach (
+                Vector3 direction
+                in directions
             )
             {
-                float distanceToPlane =
-                    Mathf.Abs(
-                        currentMeccha
-                            .transform.position.y -
-                        s_Hits[0].pose.position.y
+                Ray ray =
+                    new Ray(
+                        point,
+                        direction
                     );
 
+                s_Hits.Clear();
+
                 if (
-                    distanceToPlane <=
-                    0.05f
+                    !raycastManager.Raycast(
+                        ray,
+                        s_Hits,
+                        TrackableType.Planes
+                    )
                 )
                 {
-                    return true;
+                    continue;
+                }
+
+                foreach (
+                    ARRaycastHit hit
+                    in s_Hits
+                )
+                {
+                    float distance =
+                        Vector3.Distance(
+                            point,
+                            hit.pose.position
+                        );
+
+                    if (
+                        distance <=
+                        validPlacementDistance
+                    )
+                    {
+                        return true;
+                    }
                 }
             }
         }
@@ -531,7 +813,9 @@ public class MecchaFineTuneController : MonoBehaviour
     public void MoveUp()
     {
         if (currentMeccha == null)
+        {
             return;
+        }
 
         currentMeccha.transform.localPosition +=
             Vector3.up *
@@ -541,7 +825,9 @@ public class MecchaFineTuneController : MonoBehaviour
     public void MoveDown()
     {
         if (currentMeccha == null)
+        {
             return;
+        }
 
         currentMeccha.transform.localPosition +=
             Vector3.down *
@@ -554,7 +840,9 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             arCameraTransform == null
         )
+        {
             return;
+        }
 
         Vector3 cameraRight =
             arCameraTransform.right;
@@ -570,7 +858,9 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             arCameraTransform == null
         )
+        {
             return;
+        }
 
         Vector3 cameraRight =
             arCameraTransform.right;
@@ -586,12 +876,14 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             arCameraTransform == null
         )
+        {
             return;
+        }
 
         Vector3 camForward =
             arCameraTransform.forward;
 
-        camForward.y = 0;
+        camForward.y = 0f;
 
         if (
             camForward.sqrMagnitude >
@@ -610,12 +902,14 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             arCameraTransform == null
         )
+        {
             return;
+        }
 
         Vector3 camForward =
             arCameraTransform.forward;
 
-        camForward.y = 0;
+        camForward.y = 0f;
 
         if (
             camForward.sqrMagnitude >
@@ -633,7 +927,9 @@ public class MecchaFineTuneController : MonoBehaviour
     public void RotateHorizontal()
     {
         if (currentMeccha == null)
+        {
             return;
+        }
 
         currentMeccha.transform.Rotate(
             Vector3.up,
@@ -648,7 +944,9 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha == null ||
             arCameraTransform == null
         )
+        {
             return;
+        }
 
         currentMeccha.transform.Rotate(
             arCameraTransform.right,
@@ -661,8 +959,6 @@ public class MecchaFineTuneController : MonoBehaviour
 
     public void ReAnchorCurrentMeccha()
     {
-        // Intentionally disabled.
-
         Debug.Log(
             "ReAnchorCurrentMeccha() called - ignored. " +
             "Existing ARAnchor is being preserved."

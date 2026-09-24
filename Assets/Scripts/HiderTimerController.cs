@@ -4,37 +4,23 @@ using TMPro;
 
 public class HiderTimerController : MonoBehaviour
 {
-    // =============================================================
-    // TIMER SETTINGS
-    // =============================================================
-
     [Header("Timer Settings")]
-
     [Tooltip(
         "Total gameplay duration in seconds."
     )]
     public float totalTimeInSeconds = 120f;
 
-    // =============================================================
     // UI REFERENCES
-    // =============================================================
 
     [Header("UI References")]
-
     public TextMeshProUGUI timerText;
-
     public Image timerFillImage;
-
     public GameObject timeUpPanel;
-
     public GameObject pausePanel;
 
-    // =============================================================
     // HUNTER REVEAL
-    // =============================================================
 
     [Header("Hunter Reveal Phase")]
-
     [Tooltip(
         "Assign this ONLY for Hunter gameplay. " +
         "Leave empty for Hider gameplay."
@@ -46,35 +32,21 @@ public class HiderTimerController : MonoBehaviour
     public HunterMecchaScoreController
     hunterScoreController;
 
-    // =============================================================
     // UI BUTTONS
-    // =============================================================
 
     [Header("UI Buttons")]
-
     public Button pauseButton;
-
     public Button resumeButton;
 
-    // =============================================================
     // INTERNAL STATE
-    // =============================================================
 
     private float currentTime;
-
     private bool isTimerRunning = false;
-
     private bool timerCompleted = false;
-
-    // =============================================================
-    // START
-    // =============================================================
 
     private void Start()
     {
-        // ---------------------------------------------------------
         // CONNECT PAUSE BUTTON
-        // ---------------------------------------------------------
 
         if (pauseButton != null)
         {
@@ -83,9 +55,7 @@ public class HiderTimerController : MonoBehaviour
             );
         }
 
-        // ---------------------------------------------------------
         // CONNECT RESUME BUTTON
-        // ---------------------------------------------------------
 
         if (resumeButton != null)
         {
@@ -95,18 +65,10 @@ public class HiderTimerController : MonoBehaviour
         }
     }
 
-    // =============================================================
-    // ENABLE
-    // =============================================================
-
     private void OnEnable()
     {
         StartTimer();
     }
-
-    // =============================================================
-    // UPDATE
-    // =============================================================
 
     private void Update()
     {
@@ -115,58 +77,37 @@ public class HiderTimerController : MonoBehaviour
             return;
         }
 
-        // ---------------------------------------------------------
         // COUNT DOWN
-        // ---------------------------------------------------------
 
-        currentTime -=
-            Time.deltaTime;
+        currentTime -= Time.deltaTime;
 
-        // ---------------------------------------------------------
         // TIMER COMPLETE
-        // ---------------------------------------------------------
 
         if (
             currentTime <= 0f
         )
         {
             currentTime = 0f;
-
             isTimerRunning = false;
 
             if (!timerCompleted)
             {
                 timerCompleted = true;
-
                 OnTimerComplete();
             }
         }
-
-        // ---------------------------------------------------------
-        // UPDATE UI
-        // ---------------------------------------------------------
-
         UpdateTimerUI();
     }
 
-    // =============================================================
     // START TIMER
-    // =============================================================
 
     public void StartTimer()
     {
-        currentTime =
-            totalTimeInSeconds;
+        currentTime = totalTimeInSeconds;
+        isTimerRunning = true;
+        timerCompleted = false;
 
-        isTimerRunning =
-            true;
-
-        timerCompleted =
-            false;
-
-        // ---------------------------------------------------------
         // HIDE NORMAL END PANELS
-        // ---------------------------------------------------------
 
         if (timeUpPanel != null)
         {
@@ -193,24 +134,13 @@ public class HiderTimerController : MonoBehaviour
         {
             hunterRevealPhaseController.ResetRevealState();
         }
-
-        // ---------------------------------------------------------
-        // UPDATE UI
-        // ---------------------------------------------------------
-
         UpdateTimerUI();
     }
 
-    // =============================================================
     // UPDATE TIMER UI
-    // =============================================================
 
     private void UpdateTimerUI()
     {
-        // ---------------------------------------------------------
-        // MINUTES / SECONDS
-        // ---------------------------------------------------------
-
         int minutes =
             Mathf.FloorToInt(
                 currentTime / 60f
@@ -221,9 +151,7 @@ public class HiderTimerController : MonoBehaviour
                 currentTime % 60f
             );
 
-        // ---------------------------------------------------------
         // TIMER TEXT
-        // ---------------------------------------------------------
 
         if (timerText != null)
         {
@@ -235,9 +163,7 @@ public class HiderTimerController : MonoBehaviour
                 );
         }
 
-        // ---------------------------------------------------------
         // TIMER RING
-        // ---------------------------------------------------------
 
         if (
             timerFillImage != null &&
@@ -252,15 +178,11 @@ public class HiderTimerController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // TIMER COMPLETE
-    // =============================================================
 
     private void OnTimerComplete()
     {
-        // =========================================================
         // HUNTER MODE
-        // =========================================================
 
         if (
             hunterRevealPhaseController != null
@@ -271,11 +193,6 @@ public class HiderTimerController : MonoBehaviour
                 "Starting Reveal Phase."
             );
 
-            // -----------------------------------------------------
-            // IMPORTANT:
-            // Do NOT show the normal TimeUpPanel.
-            // -----------------------------------------------------
-
             if (timeUpPanel != null)
             {
                 timeUpPanel.SetActive(
@@ -283,9 +200,7 @@ public class HiderTimerController : MonoBehaviour
                 );
             }
 
-            // -----------------------------------------------------
             // START 30 SECOND REVEAL
-            // -----------------------------------------------------
 
             hunterRevealPhaseController
                 .BeginRevealPhase();
@@ -293,9 +208,7 @@ public class HiderTimerController : MonoBehaviour
             return;
         }
 
-        // =========================================================
         // HIDER MODE
-        // =========================================================
 
         if (timeUpPanel != null)
         {
@@ -309,25 +222,17 @@ public class HiderTimerController : MonoBehaviour
         );
     }
 
-    // =============================================================
     // PAUSE
-    // =============================================================
 
     public void PauseGame()
     {
-        isTimerRunning =
-            false;
+        isTimerRunning = false;
 
-        // ---------------------------------------------------------
         // FREEZE GAME TIME
-        // ---------------------------------------------------------
 
-        Time.timeScale =
-            0f;
+        Time.timeScale = 0f;
 
-        // ---------------------------------------------------------
         // SHOW PAUSE PANEL
-        // ---------------------------------------------------------
 
         if (pausePanel != null)
         {
@@ -337,22 +242,15 @@ public class HiderTimerController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // RESUME
-    // =============================================================
 
     public void ResumeGame()
     {
-        // ---------------------------------------------------------
         // RESTORE TIME
-        // ---------------------------------------------------------
 
-        Time.timeScale =
-            1f;
+        Time.timeScale = 1f;
 
-        // ---------------------------------------------------------
         // HIDE PAUSE PANEL
-        // ---------------------------------------------------------
 
         if (pausePanel != null)
         {
@@ -361,9 +259,7 @@ public class HiderTimerController : MonoBehaviour
             );
         }
 
-        // ---------------------------------------------------------
         // RESUME TIMER
-        // ---------------------------------------------------------
 
         if (currentTime > 0f)
         {
@@ -372,36 +268,28 @@ public class HiderTimerController : MonoBehaviour
         }
     }
 
-    // =============================================================
     // GET CURRENT TIME
-    // =============================================================
 
     public float GetCurrentTime()
     {
         return currentTime;
     }
 
-    // =============================================================
     // GET TIMER STATE
-    // =============================================================
 
     public bool IsTimerRunning()
     {
         return isTimerRunning;
     }
 
-    // =============================================================
     // RESET
-    // =============================================================
 
     public void ResetTimer()
     {
         StartTimer();
     }
 
-    // =============================================================
     // DISABLE
-    // =============================================================
 
     private void OnDisable()
     {
@@ -409,9 +297,7 @@ public class HiderTimerController : MonoBehaviour
             1f;
     }
 
-    // =============================================================
     // DESTROY
-    // =============================================================
 
     private void OnDestroy()
     {

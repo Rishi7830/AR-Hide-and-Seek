@@ -30,6 +30,14 @@ public class MainMenuController : MonoBehaviour
     public Button hunterButton;
     // public Button seekerButton;
 
+    [Header("MediaPipe Hand Tracking")]
+    [SerializeField]
+    private GameObject mediaPipeHandManager;
+
+    [Header("Hider Paint Manager")]
+    [SerializeField]
+    private ARFoundationPaintManager paintManager;
+
     private void Start()
     {
         // Bind button listeners dynamically
@@ -88,6 +96,11 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
+        if (mediaPipeHandManager != null)
+        {
+            mediaPipeHandManager.SetActive(false);  // Completely disable mediapipe
+        }
+
         SinglePhoneGameController.Instance.BeginHiderGame();
 
         Debug.Log(
@@ -123,6 +136,11 @@ public class MainMenuController : MonoBehaviour
             if (hiderGamePanel != null)
                 hiderGamePanel.SetActive(false);
 
+            if (paintManager != null)
+            {
+                paintManager.CleanupHiderObjects();
+            }
+
             if (hunterGamePanel != null)
                 hunterGamePanel.SetActive(true);
 
@@ -134,6 +152,11 @@ public class MainMenuController : MonoBehaviour
             {
                 arPlaneManager.enabled = false;
                 HideAllTrackedPlanes();
+            }
+
+            if (mediaPipeHandManager != null)
+            {
+                mediaPipeHandManager.SetActive(true); // Enable Mediapipe
             }
 
             Debug.Log(
@@ -162,6 +185,14 @@ public class MainMenuController : MonoBehaviour
             if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
             if (handTrackingCanvas != null)
                 handTrackingCanvas.SetActive(false);
+            if (mediaPipeHandManager != null)
+            {
+                mediaPipeHandManager.SetActive(false);  // Disable Mediapipe
+            }
+            if (paintManager != null)
+            {
+                paintManager.CleanupHiderObjects();
+            }
         }
         else
         {
