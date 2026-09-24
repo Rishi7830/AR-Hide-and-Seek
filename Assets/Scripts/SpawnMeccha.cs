@@ -43,8 +43,27 @@ public class SpawnMeccha : MonoBehaviour
 
     public void OpenSelectionPanel()
     {
-        if (selectionPanel != null)
-            selectionPanel.SetActive(true);
+        if (selectionPanel == null)
+        {
+            return;
+        }
+
+        // Toggle the spawn selection panel
+        bool shouldOpen =
+            !selectionPanel.activeSelf;
+
+        selectionPanel.SetActive(
+            shouldOpen
+        );
+
+        // Close fine-tuning when opening spawn selection
+        if (
+            shouldOpen &&
+            fineTuneController != null
+        )
+        {
+            fineTuneController.CloseFineTunePanel();
+        }
     }
 
     public void SpawnHorizontal()

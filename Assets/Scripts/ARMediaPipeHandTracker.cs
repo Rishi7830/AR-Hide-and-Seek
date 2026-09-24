@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
-
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -28,55 +26,64 @@ public class ARMediaPipeHandTracker : MonoBehaviour
     [SerializeField]
     private ARHandLandmarkVisualizer visualizer;
 
-    // HAND TRACKING SETTINGS
     [Header("Hand Tracking Settings")]
     [Tooltip("Maximum number of hands to detect. Keep this at 1.")]
     [SerializeField]
     private int numHands = 1;
-    [Range(0f, 1f)]
 
+    [Range(0f, 1f)]
     [SerializeField]
     private float minDetectionConfidence = 0.5f;
+
     [Range(0f, 1f)]
-    
     [SerializeField]
     private float minPresenceConfidence = 0.5f;
+
     [Range(0f, 1f)]
-    
     [SerializeField]
     private float minTrackingConfidence = 0.5f;
-    
+
     [Header("Performance")]
-    [Tooltip(
-        "Number of MediaPipe detections per second. " +
-        "Start with 15 on the Galaxy A53."
-    )]
-    
+    [Tooltip("MediaPipe detection frequency. 10 FPS is recommended for mobile.")]
     [SerializeField]
-    private float detectionFPS = 15f;
-    
+    private float detectionFPS = 10f;
+
+    [Tooltip("Width of the image sent to MediaPipe.")]
+    [SerializeField]
+    private int processingWidth = 640;
+
+    [Tooltip("Height of the image sent to MediaPipe.")]
+    [SerializeField]
+    private int processingHeight = 480;
+
     [Header("Camera Image Orientation")]
     [SerializeField]
-    private bool mirrorX = false;
-    
+    private bool mirrorX = true;
+
     [SerializeField]
     private bool mirrorY = true;
-    
+
     [Header("Debug")]
     [SerializeField]
     private bool logDetection = false;
 
-    // INTERNAL VARIABLES
     private HandLandmarker handLandmarker;
     private HandLandmarkerResult result;
+
     private NativeArray<byte> pixelBuffer;
     private Texture2D cameraTexture;
+
     private Coroutine trackingCoroutine;
     private Stopwatch stopwatch;
+
     private bool initialized = false;
+
+    private int actualImageWidth;
+    private int actualImageHeight;
+
     private void Start()
     {
-        // FIND AR CAMERA MANAGER
+        // Find AR camera manager
         if (arCameraManager == null)
         {
             arCameraManager =
@@ -93,7 +100,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             return;
         }
 
-        // FIND HAND VISUALIZER
+        // Find hand landmark visualizer
         if (visualizer == null)
         {
             visualizer =
@@ -104,27 +111,25 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         if (visualizer == null)
         {
             UnityEngine.Debug.LogError(
-                "[ARHand] ARHandLandmarkVisualizer " +
-                "was not found."
+                "[ARHand] ARHandLandmarkVisualizer was not found."
             );
 
             enabled = false;
             return;
         }
 
-        // CHECK MEDIAPIPE MODEL
+        // Check that the MediaPipe model is assigned
         if (handLandmarkerModel == null)
         {
             UnityEngine.Debug.LogError(
-                "[ARHand] Hand Landmarker model " +
-                "has not been assigned."
+                "[ARHand] Hand Landmarker model has not been assigned."
             );
 
             enabled = false;
             return;
         }
 
-        // INITIALIZE MEDIAPIPE
+        // Initialize MediaPipe
         InitializeMediaPipe();
 
         if (!initialized)
@@ -133,29 +138,34 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             return;
         }
 
-        // CREATE TIMESTAMP TIMER
+        // Start timestamp timer used by VIDEO mode
         stopwatch =
             new Stopwatch();
 
         stopwatch.Start();
 
-        // START HAND TRACKING
+        // Start hand tracking loop
         trackingCoroutine =
             StartCoroutine(
                 TrackingLoop()
             );
 
         UnityEngine.Debug.Log(
-            "[ARHand] AR hand tracking started successfully."
+            "[ARHand] Hand tracking started. " +
+            "FPS = " +
+            detectionFPS +
+            ", Input = " +
+            processingWidth +
+            "x" +
+            processingHeight
         );
     }
 
-    // INITIALIZE MEDIAPIPE
     private void InitializeMediaPipe()
     {
         try
         {
-            // BASE OPTIONS
+            // Configure MediaPipe to use CPU inference
             BaseOptions baseOptions =
                 new BaseOptions(
                     BaseOptions.Delegate.CPU,
@@ -163,31 +173,29 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                         handLandmarkerModel.bytes
                 );
 
-            // HAND LANDMARKER OPTIONS
+            // Configure the hand landmarker
             HandLandmarkerOptions options =
                 new HandLandmarkerOptions(
                     baseOptions,
                     runningMode:
                         RunningMode.VIDEO,
-
                     numHands:
                         numHands,
-
                     minHandDetectionConfidence:
                         minDetectionConfidence,
-
                     minHandPresenceConfidence:
                         minPresenceConfidence,
-
                     minTrackingConfidence:
                         minTrackingConfidence
                 );
 
-            // CREATE HAND LANDMARKER
+            // Create MediaPipe hand landmarker
             handLandmarker =
                 HandLandmarker.CreateFromOptions(
                     options
                 );
+
+            // Allocate result storage
             result =
                 HandLandmarkerResult.Alloc(
                     numHands
@@ -213,9 +221,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         }
     }
 
-    // TRACKING LOOP
     private IEnumerator TrackingLoop()
     {
+        // Calculate delay between MediaPipe detections
         float interval =
             1f /
             Mathf.Max(
@@ -228,6 +236,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                 interval
             );
 
+        // Process camera frames at the selected detection FPS
         while (enabled)
         {
             ProcessLatestARFrame();
@@ -236,9 +245,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         }
     }
 
-    // PROCESS LATEST AR CAMERA FRAME
     private unsafe void ProcessLatestARFrame()
     {
+        // Make sure MediaPipe is ready
         if (
             !initialized ||
             handLandmarker == null
@@ -247,7 +256,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             return;
         }
 
-        // GET LATEST AR FOUNDATION CPU CAMERA IMAGE
+        // Acquire the latest AR Foundation CPU camera image
         if (
             !arCameraManager
                 .TryAcquireLatestCpuImage(
@@ -260,39 +269,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
 
         using (cpuImage)
         {
-            int width =
-                cpuImage.width;
-
-            int height =
-                cpuImage.height;
-
-            int requiredBytes =
-                width *
-                height *
-                4;
-
-            // CREATE / RESIZE PIXEL BUFFER
-            if (
-                !pixelBuffer.IsCreated ||
-                pixelBuffer.Length !=
-                requiredBytes
-            )
-            {
-                if (pixelBuffer.IsCreated)
-                {
-                    pixelBuffer.Dispose();
-                }
-
-                pixelBuffer =
-                    new NativeArray<byte>(
-                        requiredBytes,
-                        Allocator.Persistent,
-                        NativeArrayOptions
-                            .UninitializedMemory
-                    );
-            }
-
-            // IMAGE TRANSFORMATION
+            // Configure image mirroring
             XRCpuImage.Transformation transformation =
                 XRCpuImage.Transformation.None;
 
@@ -308,7 +285,14 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                     XRCpuImage.Transformation.MirrorY;
             }
 
-            // CONVERT AR IMAGE TO RGBA32
+            // Set the lower processing resolution for MediaPipe
+            Vector2Int processingSize =
+                new Vector2Int(
+                    processingWidth,
+                    processingHeight
+                );
+
+            // Configure AR camera image conversion
             XRCpuImage.ConversionParams conversionParams =
                 new XRCpuImage.ConversionParams(
                     cpuImage,
@@ -316,6 +300,35 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                     transformation
                 );
 
+            conversionParams.outputDimensions =
+                processingSize;
+
+            // Calculate the required RGBA buffer size
+            int requiredBytes =
+                cpuImage.GetConvertedDataSize(
+                    conversionParams
+                );
+
+            // Create or resize the reusable pixel buffer
+            if (
+                !pixelBuffer.IsCreated ||
+                pixelBuffer.Length != requiredBytes
+            )
+            {
+                if (pixelBuffer.IsCreated)
+                {
+                    pixelBuffer.Dispose();
+                }
+
+                pixelBuffer =
+                    new NativeArray<byte>(
+                        requiredBytes,
+                        Allocator.Persistent,
+                        NativeArrayOptions.UninitializedMemory
+                    );
+            }
+
+            // Get pointer to the native pixel buffer
             System.IntPtr destination =
                 (System.IntPtr)
                 NativeArrayUnsafeUtility
@@ -323,17 +336,24 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                         pixelBuffer
                     );
 
+            // Convert AR camera image to resized RGBA32
             cpuImage.Convert(
                 conversionParams,
                 destination,
                 pixelBuffer.Length
             );
 
-            // CREATE / RESIZE UNITY TEXTURE
+            actualImageWidth =
+                processingWidth;
+
+            actualImageHeight =
+                processingHeight;
+
+            // Create or resize the Unity texture
             if (
                 cameraTexture == null ||
-                cameraTexture.width != width ||
-                cameraTexture.height != height
+                cameraTexture.width != actualImageWidth ||
+                cameraTexture.height != actualImageHeight
             )
             {
                 if (cameraTexture != null)
@@ -345,8 +365,8 @@ public class ARMediaPipeHandTracker : MonoBehaviour
 
                 cameraTexture =
                     new Texture2D(
-                        width,
-                        height,
+                        actualImageWidth,
+                        actualImageHeight,
                         TextureFormat.RGBA32,
                         false
                     );
@@ -361,35 +381,36 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                     FilterMode.Bilinear;
             }
 
-            // COPY AR CAMERA PIXELS INTO TEXTURE
+            // Copy converted camera pixels into the Unity texture
             cameraTexture.LoadRawTextureData(
                 pixelBuffer
             );
 
+            // Upload texture data
             cameraTexture.Apply(
                 false,
                 false
             );
 
-            // CREATE MEDIAPIPE IMAGE
+            // Wrap Unity texture as a MediaPipe image
             using Image image =
                 new Image(
                     cameraTexture
                 );
 
-            // TIMESTAMP
+            // Generate timestamp required by MediaPipe VIDEO mode
             long timestampMilliseconds =
                 stopwatch != null
                     ? stopwatch.ElapsedMilliseconds
                     : 0;
 
-            // MEDIAPIPE IMAGE PROCESSING OPTIONS
+            // No additional image rotation is required
             ImageProcessingOptions imageProcessingOptions =
                 new ImageProcessingOptions(
                     rotationDegrees: 0
                 );
 
-            // RUN MEDIAPIPE HAND LANDMARKER
+            // Run MediaPipe hand landmark detection
             bool detected =
                 handLandmarker.TryDetectForVideo(
                     image,
@@ -398,7 +419,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                     ref result
                 );
 
-            // HANDLE RESULT
+            // Process detected hand or hide landmarks
             if (detected)
             {
                 ProcessResult(
@@ -419,12 +440,11 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         }
     }
 
-    // PROCESS HAND LANDMARK RESULT
     private void ProcessResult(
         HandLandmarkerResult handResult
     )
     {
-        // CHECK FOR HAND
+        // Check that MediaPipe returned a hand
         if (
             handResult.handLandmarks == null ||
             handResult.handLandmarks.Count == 0
@@ -434,10 +454,11 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             return;
         }
 
-        // USE FIRST HAND ONLY
+        // Use only the first detected hand
         var firstHand =
             handResult.handLandmarks[0];
 
+        // Make sure all 21 landmarks are available
         if (
             firstHand.landmarks == null ||
             firstHand.landmarks.Count < 21
@@ -447,7 +468,7 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             return;
         }
 
-        // COPY THE 21 NORMALIZED LANDMARK POSITIONS
+        // Copy the 21 normalized landmark positions
         Vector2[] normalizedLandmarks =
             new Vector2[21];
 
@@ -467,12 +488,12 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                 );
         }
 
-        // DRAW HAND POINTS + LINES
+        // Update the purple landmark points and connecting lines
         visualizer.UpdateHand(
-        normalizedLandmarks,
-        cameraTexture.width,
-        cameraTexture.height
-    );
+            normalizedLandmarks,
+            actualImageWidth,
+            actualImageHeight
+        );
 
         if (logDetection)
         {
@@ -483,10 +504,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         }
     }
 
-    // CLEANUP
-    private void OnDestroy()
+    private void OnDisable()
     {
-        // STOP TRACKING LOOP
+        // Stop tracking when MediaPipeHandManager is disabled
         if (trackingCoroutine != null)
         {
             StopCoroutine(
@@ -496,7 +516,32 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             trackingCoroutine = null;
         }
 
-        // STOP TIMER
+        // Stop the MediaPipe timestamp timer
+        if (stopwatch != null)
+        {
+            stopwatch.Stop();
+        }
+
+        // Hide any remaining hand landmarks
+        if (visualizer != null)
+        {
+            visualizer.HideHand();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // Stop tracking coroutine
+        if (trackingCoroutine != null)
+        {
+            StopCoroutine(
+                trackingCoroutine
+            );
+
+            trackingCoroutine = null;
+        }
+
+        // Stop and release timestamp timer
         if (stopwatch != null)
         {
             stopwatch.Stop();
@@ -504,13 +549,13 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             stopwatch = null;
         }
 
-        // RELEASE PIXEL BUFFER
+        // Release native camera pixel buffer
         if (pixelBuffer.IsCreated)
         {
             pixelBuffer.Dispose();
         }
 
-        // RELEASE CAMERA TEXTURE
+        // Destroy MediaPipe input texture
         if (cameraTexture != null)
         {
             Destroy(
@@ -520,7 +565,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             cameraTexture = null;
         }
 
+        // Clear MediaPipe references
         handLandmarker = null;
+
         initialized = false;
     }
 }
