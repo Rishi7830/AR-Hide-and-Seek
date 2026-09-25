@@ -67,5 +67,109 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2319322727971390821, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -667678191706764771}
+    - targetCorrespondingSourceObject: {fileID: 2319322727971390821, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -2388362590649112260}
+    - targetCorrespondingSourceObject: {fileID: 710405957609152647, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3630022797849532323}
+    - targetCorrespondingSourceObject: {fileID: 710405957609152647, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2796272455548337941}
   m_SourcePrefab: {fileID: 100100000, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+--- !u!137 &437337823056782736 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 342703144426162166, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+  m_PrefabInstance: {fileID: 202726714374759014}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &795981183213585121 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 710405957609152647, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+  m_PrefabInstance: {fileID: 202726714374759014}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &3630022797849532323
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795981183213585121}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 7957087864999535579, guid: d0f3eb0b480c07040a91704b3878cd31, type: 3}
+--- !u!114 &2796272455548337941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795981183213585121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db6d4b693b5ede04aae96872934a7276, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MecchaTexturePainter
+  targetRenderer: {fileID: 437337823056782736}
+  textureWidth: 1024
+  textureHeight: 1024
+  brushRadius: 20
+  textureApplyInterval: 0.05
+  applyTextureWhenStrokeEnds: 1
+  logPaintInfo: 0
+--- !u!1 &2521973344114550531 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2319322727971390821, guid: 046ea6db29c24b44da67b808bfcc7588, type: 3}
+  m_PrefabInstance: {fileID: 202726714374759014}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &-667678191706764771
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2521973344114550531}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-2388362590649112260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2521973344114550531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4279f54c1186de940bef5509dc8b93c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HunterMecchaTarget
+  hitColor: {r: 1, g: 0, b: 0, a: 1}
+  revealRedColor: {r: 1, g: 0, b: 0, a: 1}
+  revealWhiteColor: {r: 1, g: 1, b: 1, a: 1}

@@ -30,6 +30,8 @@ public class ARFoundationPaintManager : MonoBehaviour
                     OnTrackablesChanged
                 );
         }
+        // Remove Hider runtime objects when manager is disabled.
+        CleanupHiderObjects();
     }
 
     private void OnDisable()

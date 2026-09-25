@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.Events;
 
 public class HunterMecchaScoreController : MonoBehaviour
 {
@@ -10,12 +11,20 @@ public class HunterMecchaScoreController : MonoBehaviour
     [SerializeField]
     private TMP_Text mecchaFoundText;
 
+    [Header("Hunter Events")]
+    [Tooltip(
+        "Called immediately when every Meccha has been found."
+    )]
+    [SerializeField]
+    private UnityEvent onAllMecchasFound;
+
     // STATE
 
     private int totalMecchas;
     private int remainingMecchas;
     private int mecchasFound;
     private HunterMecchaTarget[] mecchaTargets;
+    private bool allMecchasFoundEventSent = false;
 
     private void Start()
     {
@@ -47,6 +56,8 @@ public class HunterMecchaScoreController : MonoBehaviour
 
         remainingMecchas =
             totalMecchas;
+
+        allMecchasFoundEventSent = false;
 
         UpdateUI();
 
@@ -92,8 +103,7 @@ public class HunterMecchaScoreController : MonoBehaviour
 
         remainingMecchas =
             Mathf.Max(
-                totalMecchas -
-                mecchasFound,
+                totalMecchas - mecchasFound,
                 0
             );
 
@@ -108,6 +118,21 @@ public class HunterMecchaScoreController : MonoBehaviour
             " | Remaining = " +
             remainingMecchas
         );
+
+        // Immediately end Hunter when the last Meccha is found
+        if (
+            AllMecchasFound() &&
+            !allMecchasFoundEventSent
+        )
+        {
+            allMecchasFoundEventSent = true;
+
+            Debug.Log(
+                "[HunterScore] ALL MECCHAS FOUND!"
+            );
+
+            onAllMecchasFound?.Invoke();
+        }
     }
 
     // UPDATE UI

@@ -311,6 +311,41 @@ public class HunterRevealPhaseController : MonoBehaviour
         }
     }
 
+    // All Mecchas Found within 2 Minutes - Seekers Win
+
+    public void OnAllMecchasFound()
+    {
+        if (finalResultShown)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "[HunterGame] All Mecchas found before timer ended."
+        );
+
+        // Stop the Hunter timer
+        HiderTimerController hunterTimer =
+            FindFirstObjectByType<HiderTimerController>();
+
+        if (hunterTimer != null)
+        {
+            hunterTimer.StopTimer();
+        }
+
+        // Disable shooting
+        if (shootButton != null)
+        {
+            shootButton.interactable = false;
+        }
+
+        // Make sure Reveal is not active
+        StopReveal();
+
+        // Show Seeker victory immediately
+        ShowSeekersWin();
+    }
+
     // UPDATE MECCHA PULSE
 
     private void UpdateMecchaPulse()

@@ -7888,7 +7888,6 @@ MonoBehaviour:
   spawnMeccha: {fileID: 514495555}
   fineTuneController: {fileID: 482444200}
   mecchaCounterManager: {fileID: 2099970475}
-  paintManager: {fileID: 1976924006}
   arPlaneManager: {fileID: 151853166}
   handTrackingCanvas: {fileID: 673310402}
   mediaPipeHandManager: {fileID: 26609055}

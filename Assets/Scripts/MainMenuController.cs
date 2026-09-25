@@ -96,6 +96,19 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
+        // Enable Hider painting system.
+        if (paintManager != null)
+        {
+            paintManager.gameObject.SetActive(true);
+        }
+
+        // Enable plane detection.
+        if (arPlaneManager != null)
+        {
+            arPlaneManager.enabled = true;
+            ShowAllTrackedPlanes();
+        }
+
         if (mediaPipeHandManager != null)
         {
             mediaPipeHandManager.SetActive(false);  // Completely disable mediapipe
@@ -139,6 +152,7 @@ public class MainMenuController : MonoBehaviour
             if (paintManager != null)
             {
                 paintManager.CleanupHiderObjects();
+                paintManager.gameObject.SetActive(false);
             }
 
             if (hunterGamePanel != null)

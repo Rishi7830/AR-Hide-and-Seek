@@ -70,6 +70,16 @@ public class HiderTimerController : MonoBehaviour
         StartTimer();
     }
 
+    public void StopTimer()
+    {
+        // Stop the timer without triggering the normal time-up logic
+        isTimerRunning = false;
+
+        Debug.Log(
+            "[Timer] Timer stopped early."
+        );
+    }
+
     private void Update()
     {
         if (!isTimerRunning)

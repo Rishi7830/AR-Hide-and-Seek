@@ -39,6 +39,7 @@ public class SinglePhoneGameController : MonoBehaviour
     public SpawnMeccha spawnMeccha;
     public MecchaFineTuneController fineTuneController;
     public MecchaCounterManager mecchaCounterManager;
+    public ARFoundationPaintManager paintManager;
 
     [Header("AR References")]
     public ARPlaneManager arPlaneManager;
@@ -218,6 +219,23 @@ public class SinglePhoneGameController : MonoBehaviour
         {
             fineTuneController.enabled = enabled;
         }
+
+        if (paintManager != null)
+        {
+            if (!enabled)
+            {
+                // Remove spawned palette and brush.
+                paintManager.CleanupHiderObjects();
+
+                // Disable the entire painting system.
+                paintManager.gameObject.SetActive(false);
+            }
+            else
+            {
+                // Enable the painting system for a new Hider round.
+                paintManager.gameObject.SetActive(true);
+            }
+        }
     }
 
     private int GetCurrentMecchaCount()
@@ -271,5 +289,11 @@ public class SinglePhoneGameController : MonoBehaviour
 
         if (fineTuneController != null)
             fineTuneController.enabled = false;
+
+        if (paintManager != null)
+        {
+            paintManager.CleanupHiderObjects();
+            paintManager.gameObject.SetActive(false);
+        }
     }
 }

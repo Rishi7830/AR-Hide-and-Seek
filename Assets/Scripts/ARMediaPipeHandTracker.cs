@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Diagnostics;
+
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -44,9 +46,12 @@ public class ARMediaPipeHandTracker : MonoBehaviour
     private float minTrackingConfidence = 0.5f;
 
     [Header("Performance")]
-    [Tooltip("MediaPipe detection frequency. 10 FPS is recommended for mobile.")]
+    [Tooltip(
+        "MediaPipe detection frequency. " +
+        "15 FPS is recommended for responsive Hunter gameplay."
+    )]
     [SerializeField]
-    private float detectionFPS = 10f;
+    private float detectionFPS = 15f;
 
     [Tooltip("Width of the image sent to MediaPipe.")]
     [SerializeField]
@@ -67,6 +72,14 @@ public class ARMediaPipeHandTracker : MonoBehaviour
     [SerializeField]
     private bool logDetection = false;
 
+    [Header("Landmark Smoothing")]
+    [Tooltip(
+        "Smooths MediaPipe landmark movement without adding too much delay."
+    )]
+    [SerializeField]
+    [Range(0f, 1f)]
+    private float landmarkSmoothing = 0.65f;
+
     private HandLandmarker handLandmarker;
     private HandLandmarkerResult result;
 
@@ -80,6 +93,13 @@ public class ARMediaPipeHandTracker : MonoBehaviour
 
     private int actualImageWidth;
     private int actualImageHeight;
+
+    // Stores the previous smoothed position of each landmark.
+    private Vector2[] smoothedLandmarks =
+        new Vector2[21];
+
+    // Tells us whether a valid previous landmark position exists.
+    private bool hasSmoothedLandmarks = false;
 
     private void Start()
     {
@@ -324,7 +344,8 @@ public class ARMediaPipeHandTracker : MonoBehaviour
                     new NativeArray<byte>(
                         requiredBytes,
                         Allocator.Persistent,
-                        NativeArrayOptions.UninitializedMemory
+                        NativeArrayOptions
+                            .UninitializedMemory
                     );
             }
 
@@ -352,8 +373,10 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             // Create or resize the Unity texture
             if (
                 cameraTexture == null ||
-                cameraTexture.width != actualImageWidth ||
-                cameraTexture.height != actualImageHeight
+                cameraTexture.width !=
+                    actualImageWidth ||
+                cameraTexture.height !=
+                    actualImageHeight
             )
             {
                 if (cameraTexture != null)
@@ -430,6 +453,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             {
                 visualizer.HideHand();
 
+                // Reset smoothing when the hand disappears
+                hasSmoothedLandmarks = false;
+
                 if (logDetection)
                 {
                     UnityEngine.Debug.Log(
@@ -451,27 +477,30 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         )
         {
             visualizer.HideHand();
+
+            hasSmoothedLandmarks = false;
+
             return;
         }
 
-        // Use only the first detected hand
+        // Use the first detected hand
         var firstHand =
             handResult.handLandmarks[0];
 
-        // Make sure all 21 landmarks are available
+        // Make sure all 21 landmarks exist
         if (
             firstHand.landmarks == null ||
             firstHand.landmarks.Count < 21
         )
         {
             visualizer.HideHand();
+
+            hasSmoothedLandmarks = false;
+
             return;
         }
 
-        // Copy the 21 normalized landmark positions
-        Vector2[] normalizedLandmarks =
-            new Vector2[21];
-
+        // Smooth each landmark position
         for (
             int i = 0;
             i < 21;
@@ -481,16 +510,35 @@ public class ARMediaPipeHandTracker : MonoBehaviour
             var landmark =
                 firstHand.landmarks[i];
 
-            normalizedLandmarks[i] =
+            Vector2 currentPosition =
                 new Vector2(
                     landmark.x,
                     landmark.y
                 );
+
+            if (!hasSmoothedLandmarks)
+            {
+                // Use the first detected position immediately
+                smoothedLandmarks[i] =
+                    currentPosition;
+            }
+            else
+            {
+                // Smooth movement between detected positions
+                smoothedLandmarks[i] =
+                    Vector2.Lerp(
+                        smoothedLandmarks[i],
+                        currentPosition,
+                        landmarkSmoothing
+                    );
+            }
         }
 
-        // Update the purple landmark points and connecting lines
+        hasSmoothedLandmarks = true;
+
+        // Update the hand visualizer
         visualizer.UpdateHand(
-            normalizedLandmarks,
+            smoothedLandmarks,
             actualImageWidth,
             actualImageHeight
         );
@@ -527,6 +575,9 @@ public class ARMediaPipeHandTracker : MonoBehaviour
         {
             visualizer.HideHand();
         }
+
+        // Reset smoothing state
+        hasSmoothedLandmarks = false;
     }
 
     private void OnDestroy()
