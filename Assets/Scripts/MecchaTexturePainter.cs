@@ -47,6 +47,7 @@ public class MecchaTexturePainter : MonoBehaviour
     private Material runtimeMaterial;
     private Color currentPaintColor = Color.red;
     private Vector2? previousUV = null;
+    private bool hasPaintedData = false;
 
     // TEXTURE APPLY STATE
 
@@ -392,6 +393,7 @@ public class MecchaTexturePainter : MonoBehaviour
                 }
             }
         }
+        hasPaintedData = true;
     }
 
     // PAINT LINE
@@ -548,6 +550,157 @@ public class MecchaTexturePainter : MonoBehaviour
 
         timeSinceLastApply =
             0f;
+    }
+
+    public bool HasPaintedData()
+    {
+        return hasPaintedData;
+    }
+
+    public byte[] GetPaintTexturePNG()
+    {
+        if (
+            paintTexture == null ||
+            !hasPaintedData
+        )
+        {
+            return null;
+        }
+
+        // Make sure the latest stroke is applied.
+        if (textureDirty)
+        {
+            ApplyPaintTexture();
+        }
+
+        byte[] pngData =
+            paintTexture.EncodeToPNG();
+
+        Debug.Log(
+            "[MecchaPainter] Encoded paint texture. " +
+            "Bytes = " +
+            (
+                pngData != null
+                    ? pngData.Length
+                    : 0
+            )
+        );
+
+        return pngData;
+    }
+
+    public bool ApplyNetworkPaintPNG(
+        byte[] pngData
+    )
+    {
+        if (
+            pngData == null ||
+            pngData.Length == 0 ||
+            runtimeMaterial == null
+        )
+        {
+            return false;
+        }
+
+        Texture2D receivedTexture =
+            new Texture2D(
+                2,
+                2,
+                TextureFormat.RGBA32,
+                false
+            );
+
+        bool loaded =
+            receivedTexture.LoadImage(
+                pngData,
+                false
+            );
+
+        if (!loaded)
+        {
+            Destroy(
+                receivedTexture
+            );
+
+            Debug.LogError(
+                "[MecchaPainter] " +
+                "Failed to load network texture."
+            );
+
+            return false;
+        }
+
+        receivedTexture.name =
+            "MecchaNetworkPaintTexture";
+
+        receivedTexture.wrapMode =
+            TextureWrapMode.Clamp;
+
+        receivedTexture.filterMode =
+            FilterMode.Bilinear;
+
+        // Remove the blank white texture
+        // that this Seeker Meccha created.
+        if (paintTexture != null)
+        {
+            Destroy(
+                paintTexture
+            );
+        }
+
+        paintTexture =
+            receivedTexture;
+
+        textureWidth =
+            paintTexture.width;
+
+        textureHeight =
+            paintTexture.height;
+
+        // Your current Meccha shader uses _BaseMap.
+        if (
+            runtimeMaterial.HasProperty(
+                "_BaseMap"
+            )
+        )
+        {
+            runtimeMaterial.SetTexture(
+                "_BaseMap",
+                paintTexture
+            );
+        }
+
+        // Optional fallback for other shaders.
+        if (
+            runtimeMaterial.HasProperty(
+                "_MainTex"
+            )
+        )
+        {
+            runtimeMaterial.SetTexture(
+                "_MainTex",
+                paintTexture
+            );
+        }
+
+        hasPaintedData =
+            true;
+
+        textureDirty =
+            false;
+
+        timeSinceLastApply =
+            0f;
+
+        Debug.Log(
+            "[MecchaPainter] " +
+            "Network paint texture applied. " +
+            paintTexture.width +
+            "x" +
+            paintTexture.height
+        );
+
+        return true;
     }
 
     // CLEANUP

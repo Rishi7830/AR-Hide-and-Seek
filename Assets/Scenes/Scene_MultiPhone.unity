@@ -1524,7 +1524,7 @@ MonoBehaviour:
   hiderButton: {fileID: 2000091102}
   hunterButton: {fileID: 283557170}
   mediaPipeHandManager: {fileID: 26609055}
-  paintManager: {fileID: 1976924006}
+  paintManager: {fileID: 0}
 --- !u!4 &201208585
 Transform:
   m_ObjectHideFlags: 0
@@ -7888,7 +7888,7 @@ MonoBehaviour:
   spawnMeccha: {fileID: 514495555}
   fineTuneController: {fileID: 482444200}
   mecchaCounterManager: {fileID: 2099970475}
-  paintManager: {fileID: 1976924006}
+  paintManager: {fileID: 0}
   arPlaneManager: {fileID: 151853166}
   handTrackingCanvas: {fileID: 673310402}
   mediaPipeHandManager: {fileID: 26609055}

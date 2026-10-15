@@ -32,6 +32,11 @@ public class SpawnMeccha : MonoBehaviour
 
     private List<GameObject> spawnedMecchas = new List<GameObject>();
 
+    [Header("Multiplayer")]
+    [SerializeField]
+    private NetworkMecchaManager
+    networkMecchaManager;
+
     private void Start()
     {
         if (arCamera == null)
@@ -70,7 +75,8 @@ public class SpawnMeccha : MonoBehaviour
     {
         SpawnMecchaOnPlane(
             horizontalMecchaPrefab,
-            Quaternion.identity
+            Quaternion.identity,
+            0
         );
     }
 
@@ -81,13 +87,15 @@ public class SpawnMeccha : MonoBehaviour
 
         SpawnMecchaOnPlane(
             verticalMecchaPrefab,
-            tilt90OnX
+            tilt90OnX,
+            1
         );
     }
 
     private void SpawnMecchaOnPlane(
         GameObject prefabToSpawn,
-        Quaternion extraRotation
+        Quaternion extraRotation,
+        int mecchaType
     )
     {
         if (planeManager == null || prefabToSpawn == null)
@@ -231,7 +239,16 @@ public class SpawnMeccha : MonoBehaviour
         // REGISTER MECCHA
 
         spawnedMecchas.Add(newMeccha);
-
+        if (
+            networkMecchaManager != null
+        )
+        {
+            networkMecchaManager
+                .RegisterHiderMeccha(
+                    newMeccha,
+                    mecchaType
+                );
+        }
         OnMecchaSpawned(newMeccha);
 
         // UPDATE COUNTER
@@ -392,6 +409,16 @@ public class SpawnMeccha : MonoBehaviour
             coordinateDisplay.SetTargetMeccha(
                 prevMeccha
             );
+        }
+
+        if (
+            networkMecchaManager != null && lastMeccha != null
+        )
+        {
+            networkMecchaManager
+                .RemoveHiderMeccha(
+                    lastMeccha
+                );
         }
 
         // DELETE MECCHA AND ITS ANCHOR

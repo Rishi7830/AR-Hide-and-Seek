@@ -31,12 +31,20 @@ public class HunterMecchaTarget : MonoBehaviour
     private bool alreadyHit = false;
     private bool revealActive = false;
 
+    private NetworkMecchaManager
+    networkMecchaManager;
+
     private void Awake()
     {
         mecchaRenderers =
             GetComponentsInChildren<Renderer>(
                 true
             );
+
+        networkMecchaManager =
+        FindFirstObjectByType<
+            NetworkMecchaManager
+        >();
 
         // SAVE ORIGINAL MATERIALS
 
@@ -78,6 +86,16 @@ public class HunterMecchaTarget : MonoBehaviour
             false;
 
         MakeRed();
+
+        if (
+            networkMecchaManager != null
+        )
+        {
+            networkMecchaManager
+                .ReportMecchaFound(
+                    gameObject
+                );
+        }
 
         Debug.Log(
             "[HunterMeccha] Meccha has been shot: " +

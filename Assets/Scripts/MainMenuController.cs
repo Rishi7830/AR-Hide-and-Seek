@@ -12,7 +12,7 @@ public class MainMenuController : MonoBehaviour
     [Header("Panel Swapping References (Option A)")]
     public GameObject mainMenuPanel;
     public GameObject hiderGamePanel;
-    public GameObject hunterGamePanel; // Optional placeholder for future implementation
+    public GameObject hunterGamePanel; 
     // public GameObject seekerGamePanel;
 
     [Header("Hunter Hand Tracking")]

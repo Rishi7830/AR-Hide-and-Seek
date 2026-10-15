@@ -421,9 +421,12 @@ MonoBehaviour:
   minPresenceConfidence: 0.5
   minTrackingConfidence: 0.5
   detectionFPS: 15
+  processingWidth: 640
+  processingHeight: 480
   mirrorX: 1
   mirrorY: 1
   logDetection: 1
+  landmarkSmoothing: 0.65
 --- !u!4 &26609057
 Transform:
   m_ObjectHideFlags: 0
@@ -1520,6 +1523,8 @@ MonoBehaviour:
   hunterSceneName: HunterScene
   hiderButton: {fileID: 2000091102}
   hunterButton: {fileID: 283557170}
+  mediaPipeHandManager: {fileID: 0}
+  paintManager: {fileID: 0}
 --- !u!4 &201208585
 Transform:
   m_ObjectHideFlags: 0
@@ -2479,6 +2484,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScreenPaintController
   arCamera: {fileID: 331264289}
   rayDistance: 100
+  maxRaycastHits: 16
+  minimumPaintPixelMovement: 4
+  onlyPaintWhenMoving: 1
   allowMouseInEditor: 1
   logRaycastHits: 1
 --- !u!4 &267327761
@@ -4686,6 +4694,7 @@ MonoBehaviour:
   anchorManager: {fileID: 1976924000}
   validMaterial: {fileID: 2100000, guid: 81b044309bef18e4b9ae97d7562517bf, type: 2}
   invalidMaterial: {fileID: 2100000, guid: 1d42c6a99f40f3a4196b12e3bcbb0c3c, type: 2}
+  validPlacementDistance: 0.05
   currentMeccha: {fileID: 0}
   stepDistance: 0.05
   rotationAngle: 15
@@ -8038,8 +8047,10 @@ MonoBehaviour:
   spawnMeccha: {fileID: 514495555}
   fineTuneController: {fileID: 482444200}
   mecchaCounterManager: {fileID: 2099970475}
+  paintManager: {fileID: 0}
   arPlaneManager: {fileID: 151853166}
   handTrackingCanvas: {fileID: 673310402}
+  mediaPipeHandManager: {fileID: 26609055}
 --- !u!4 &1110943363
 Transform:
   m_ObjectHideFlags: 0
@@ -9404,6 +9415,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HunterMecchaScoreController
   remainingMecchaText: {fileID: 957669004}
   mecchaFoundText: {fileID: 1617987745}
+  onAllMecchasFound:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &1473442128
 Transform:
   m_ObjectHideFlags: 0

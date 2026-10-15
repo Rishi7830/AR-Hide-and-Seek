@@ -83,6 +83,11 @@ public class MecchaFineTuneController : MonoBehaviour
     private Dictionary<Renderer, Material[]> originalMaterials =
         new Dictionary<Renderer, Material[]>();
 
+    // Multiplayer Network
+    [Header("Multiplayer")]
+    [SerializeField]
+    private NetworkMecchaManager networkMecchaManager;
+
     // STATE
 
     private bool isFineTuningActive = false;
@@ -215,6 +220,22 @@ public class MecchaFineTuneController : MonoBehaviour
         }
     }
 
+    private void SyncCurrentMeccha()
+    {
+        if (
+            networkMecchaManager == null ||
+            currentMeccha == null
+        )
+        {
+            return;
+        }
+
+        networkMecchaManager
+            .SyncHiderMeccha(
+                currentMeccha
+            );
+    }
+
     // TARGET MECCHA
 
     public void SetTargetMeccha(
@@ -316,6 +337,9 @@ public class MecchaFineTuneController : MonoBehaviour
 
     public void CloseFineTunePanel()
     {
+        // Send the final adjusted pose before closing.
+        SyncCurrentMeccha();
+
         isFineTuningActive =
             false;
 
@@ -820,6 +844,8 @@ public class MecchaFineTuneController : MonoBehaviour
         currentMeccha.transform.localPosition +=
             Vector3.up *
             stepDistance;
+
+        SyncCurrentMeccha();
     }
 
     public void MoveDown()
@@ -832,6 +858,8 @@ public class MecchaFineTuneController : MonoBehaviour
         currentMeccha.transform.localPosition +=
             Vector3.down *
             stepDistance;
+
+        SyncCurrentMeccha();
     }
 
     public void MoveLeft()
@@ -850,6 +878,8 @@ public class MecchaFineTuneController : MonoBehaviour
         currentMeccha.transform.position -=
             cameraRight *
             stepDistance;
+
+        SyncCurrentMeccha();
     }
 
     public void MoveRight()
@@ -868,6 +898,8 @@ public class MecchaFineTuneController : MonoBehaviour
         currentMeccha.transform.position +=
             cameraRight *
             stepDistance;
+
+        SyncCurrentMeccha();
     }
 
     public void MoveFront()
@@ -893,6 +925,7 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha.transform.position +=
                 camForward.normalized *
                 stepDistance;
+            SyncCurrentMeccha();
         }
     }
 
@@ -919,6 +952,7 @@ public class MecchaFineTuneController : MonoBehaviour
             currentMeccha.transform.position -=
                 camForward.normalized *
                 stepDistance;
+            SyncCurrentMeccha();
         }
     }
 
@@ -936,6 +970,8 @@ public class MecchaFineTuneController : MonoBehaviour
             rotationAngle,
             Space.Self
         );
+
+        SyncCurrentMeccha();
     }
 
     public void RotateVertical()
@@ -953,6 +989,8 @@ public class MecchaFineTuneController : MonoBehaviour
             rotationAngle,
             Space.World
         );
+
+        SyncCurrentMeccha();
     }
 
     // RE-ANCHORING

@@ -4,13 +4,35 @@ using TMPro;
 
 public class HiderTimerController : MonoBehaviour
 {
+    public enum TimerMode
+    {
+        Local,
+        NetworkHider,
+        NetworkSeeker
+    }
+
     [Header("Timer Settings")]
     [Tooltip(
         "Total gameplay duration in seconds."
     )]
     public float totalTimeInSeconds = 120f;
 
-    // UI REFERENCES
+    [Header("Timer Mode")]
+    [Tooltip(
+        "Local = original single-phone timer. " +
+        "NetworkHider = Photon synchronized Hider timer. " +
+        "NetworkSeeker = Photon synchronized Seeker timer."
+    )]
+    [SerializeField]
+    private TimerMode timerMode =
+        TimerMode.Local;
+
+    [Header("Multiplayer")]
+    [Tooltip(
+        "Assign NetworkGameState only when using a network timer."
+    )]
+    [SerializeField]
+    private NetworkGameState networkGameState;
 
     [Header("UI References")]
     public TextMeshProUGUI timerText;
@@ -18,27 +40,21 @@ public class HiderTimerController : MonoBehaviour
     public GameObject timeUpPanel;
     public GameObject pausePanel;
 
-    // HUNTER REVEAL
-
     [Header("Hunter Reveal Phase")]
     [Tooltip(
-        "Assign this ONLY for Hunter gameplay. " +
-        "Leave empty for Hider gameplay."
+        "Assign this ONLY for Hunter gameplay in single-phone mode. " +
+        "Leave empty for Hider gameplay and multiplayer."
     )]
     public HunterRevealPhaseController
         hunterRevealPhaseController;
 
     [Header("Hunter Score")]
     public HunterMecchaScoreController
-    hunterScoreController;
-
-    // UI BUTTONS
+        hunterScoreController;
 
     [Header("UI Buttons")]
     public Button pauseButton;
     public Button resumeButton;
-
-    // INTERNAL STATE
 
     private float currentTime;
     private bool isTimerRunning = false;
@@ -46,16 +62,12 @@ public class HiderTimerController : MonoBehaviour
 
     private void Start()
     {
-        // CONNECT PAUSE BUTTON
-
         if (pauseButton != null)
         {
             pauseButton.onClick.AddListener(
                 PauseGame
             );
         }
-
-        // CONNECT RESUME BUTTON
 
         if (resumeButton != null)
         {
@@ -67,31 +79,43 @@ public class HiderTimerController : MonoBehaviour
 
     private void OnEnable()
     {
-        StartTimer();
-    }
-
-    public void StopTimer()
-    {
-        // Stop the timer without triggering the normal time-up logic
-        isTimerRunning = false;
-
-        Debug.Log(
-            "[Timer] Timer stopped early."
-        );
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
+        {
+            StartTimer();
+        }
+        else
+        {
+            PrepareNetworkTimerUI();
+        }
     }
 
     private void Update()
+    {
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
+        {
+            UpdateLocalTimer();
+        }
+        else
+        {
+            UpdateNetworkTimer();
+        }
+    }
+
+    private void UpdateLocalTimer()
     {
         if (!isTimerRunning)
         {
             return;
         }
 
-        // COUNT DOWN
-
+        // Count down the original single-phone timer.
         currentTime -= Time.deltaTime;
-
-        // TIMER COMPLETE
 
         if (
             currentTime <= 0f
@@ -103,21 +127,77 @@ public class HiderTimerController : MonoBehaviour
             if (!timerCompleted)
             {
                 timerCompleted = true;
+
                 OnTimerComplete();
             }
         }
+
         UpdateTimerUI();
     }
 
-    // START TIMER
+    private void UpdateNetworkTimer()
+    {
+        if (networkGameState == null || !networkGameState.IsNetworkReady)
+        {
+            return;
+        }
+
+        // Photon owns the actual timer.
+        if (
+            timerMode ==
+            TimerMode.NetworkHider
+        )
+        {
+            currentTime =
+                networkGameState
+                    .GetHiderRemainingTime();
+
+            isTimerRunning =
+                networkGameState.Phase ==
+                MultiplayerPhase.HiderHiding &&
+                !networkGameState
+                    .HiderTimerPaused;
+        }
+        else if (
+            timerMode ==
+            TimerMode.NetworkSeeker
+        )
+        {
+            currentTime =
+                networkGameState
+                    .GetSeekerRemainingTime();
+
+            isTimerRunning =
+                networkGameState.Phase ==
+                MultiplayerPhase
+                    .SeekerSearching;
+        }
+
+        // In multiplayer this script only displays time.
+        // NetworkGameState decides when the phase finishes.
+        UpdateTimerUI();
+    }
 
     public void StartTimer()
     {
-        currentTime = totalTimeInSeconds;
-        isTimerRunning = true;
-        timerCompleted = false;
+        if (
+            timerMode !=
+            TimerMode.Local
+        )
+        {
+            PrepareNetworkTimerUI();
 
-        // HIDE NORMAL END PANELS
+            return;
+        }
+
+        currentTime =
+            totalTimeInSeconds;
+
+        isTimerRunning =
+            true;
+
+        timerCompleted =
+            false;
 
         if (timeUpPanel != null)
         {
@@ -137,17 +217,72 @@ public class HiderTimerController : MonoBehaviour
             hunterScoreController != null
         )
         {
-            hunterScoreController.ResetScore();
+            hunterScoreController
+                .ResetScore();
         }
-         // Added
-        if (hunterRevealPhaseController != null)
+
+        if (
+            hunterRevealPhaseController != null
+        )
         {
-            hunterRevealPhaseController.ResetRevealState();
+            hunterRevealPhaseController
+                .ResetRevealState();
         }
+
         UpdateTimerUI();
     }
 
-    // UPDATE TIMER UI
+    private void PrepareNetworkTimerUI()
+    {
+        currentTime =
+            totalTimeInSeconds;
+
+        isTimerRunning =
+            false;
+
+        timerCompleted =
+            false;
+
+        if (timeUpPanel != null)
+        {
+            timeUpPanel.SetActive(
+                false
+            );
+        }
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(
+                false
+            );
+        }
+
+        UpdateTimerUI();
+    }
+
+    public void StopTimer()
+    {
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
+        {
+            isTimerRunning =
+                false;
+
+            Debug.Log(
+                "[Timer] Local timer stopped early."
+            );
+        }
+        else
+        {
+            // NetworkGameState owns multiplayer timers.
+            Debug.Log(
+                "[Timer] StopTimer ignored because " +
+                "this timer is controlled by Photon."
+            );
+        }
+    }
 
     private void UpdateTimerUI()
     {
@@ -161,8 +296,6 @@ public class HiderTimerController : MonoBehaviour
                 currentTime % 60f
             );
 
-        // TIMER TEXT
-
         if (timerText != null)
         {
             timerText.text =
@@ -172,8 +305,6 @@ public class HiderTimerController : MonoBehaviour
                     seconds
                 );
         }
-
-        // TIMER RING
 
         if (
             timerFillImage != null &&
@@ -188,14 +319,21 @@ public class HiderTimerController : MonoBehaviour
         }
     }
 
-    // TIMER COMPLETE
-
     private void OnTimerComplete()
     {
-        // HUNTER MODE
-
+        // Multiplayer completion is handled by NetworkGameState.
         if (
-            hunterRevealPhaseController != null
+            timerMode !=
+            TimerMode.Local
+        )
+        {
+            return;
+        }
+
+        // Single-phone Hunter mode.
+        if (
+            hunterRevealPhaseController !=
+            null
         )
         {
             Debug.Log(
@@ -203,14 +341,14 @@ public class HiderTimerController : MonoBehaviour
                 "Starting Reveal Phase."
             );
 
-            if (timeUpPanel != null)
+            if (
+                timeUpPanel != null
+            )
             {
                 timeUpPanel.SetActive(
                     false
                 );
             }
-
-            // START 30 SECOND REVEAL
 
             hunterRevealPhaseController
                 .BeginRevealPhase();
@@ -218,9 +356,10 @@ public class HiderTimerController : MonoBehaviour
             return;
         }
 
-        // HIDER MODE
-
-        if (timeUpPanel != null)
+        // Single-phone Hider mode.
+        if (
+            timeUpPanel != null
+        )
         {
             timeUpPanel.SetActive(
                 true
@@ -232,97 +371,170 @@ public class HiderTimerController : MonoBehaviour
         );
     }
 
-    // PAUSE
-
     public void PauseGame()
     {
-        isTimerRunning = false;
-
-        // FREEZE GAME TIME
-
-        Time.timeScale = 0f;
-
-        // SHOW PAUSE PANEL
-
-        if (pausePanel != null)
+        // Original single-phone pause.
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
         {
-            pausePanel.SetActive(
-                true
-            );
+            isTimerRunning =
+                false;
+
+            Time.timeScale =
+                0f;
+
+            if (
+                pausePanel != null
+            )
+            {
+                pausePanel.SetActive(
+                    true
+                );
+            }
+
+            return;
+        }
+
+        // Only the Hider network timer can pause the hiding phase.
+        if (
+            timerMode ==
+                TimerMode.NetworkHider &&
+            networkGameState != null
+        )
+        {
+            networkGameState
+                .PauseHiderTimer();
+
+            if (
+                pausePanel != null
+            )
+            {
+                pausePanel.SetActive(
+                    true
+                );
+            }
         }
     }
-
-    // RESUME
 
     public void ResumeGame()
     {
-        // RESTORE TIME
-
-        Time.timeScale = 1f;
-
-        // HIDE PAUSE PANEL
-
-        if (pausePanel != null)
+        // Original single-phone resume.
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
         {
-            pausePanel.SetActive(
-                false
-            );
+            Time.timeScale =
+                1f;
+
+            if (
+                pausePanel != null
+            )
+            {
+                pausePanel.SetActive(
+                    false
+                );
+            }
+
+            if (
+                currentTime > 0f
+            )
+            {
+                isTimerRunning =
+                    true;
+            }
+
+            return;
         }
 
-        // RESUME TIMER
-
-        if (currentTime > 0f)
+        // Resume the synchronized Hider timer.
+        if (
+            timerMode ==
+                TimerMode.NetworkHider &&
+            networkGameState != null
+        )
         {
-            isTimerRunning =
-                true;
+            networkGameState
+                .ResumeHiderTimer();
+
+            if (
+                pausePanel != null
+            )
+            {
+                pausePanel.SetActive(
+                    false
+                );
+            }
         }
     }
-
-    // GET CURRENT TIME
 
     public float GetCurrentTime()
     {
         return currentTime;
     }
 
-    // GET TIMER STATE
-
     public bool IsTimerRunning()
     {
         return isTimerRunning;
     }
 
-    // RESET
-
     public void ResetTimer()
     {
-        StartTimer();
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
+        {
+            StartTimer();
+        }
+        else
+        {
+            PrepareNetworkTimerUI();
+        }
     }
 
-    // DISABLE
+    public bool IsUsingNetworkTimer()
+    {
+        return
+            timerMode !=
+            TimerMode.Local;
+    }
 
     private void OnDisable()
     {
-        Time.timeScale =
-            1f;
+        // Only local single-phone mode uses Time.timeScale.
+        if (
+            timerMode ==
+            TimerMode.Local
+        )
+        {
+            Time.timeScale =
+                1f;
+        }
     }
-
-    // DESTROY
 
     private void OnDestroy()
     {
-        if (pauseButton != null)
+        if (
+            pauseButton != null
+        )
         {
-            pauseButton.onClick.RemoveListener(
-                PauseGame
-            );
+            pauseButton.onClick
+                .RemoveListener(
+                    PauseGame
+                );
         }
 
-        if (resumeButton != null)
+        if (
+            resumeButton != null
+        )
         {
-            resumeButton.onClick.RemoveListener(
-                ResumeGame
-            );
+            resumeButton.onClick
+                .RemoveListener(
+                    ResumeGame
+                );
         }
     }
 }

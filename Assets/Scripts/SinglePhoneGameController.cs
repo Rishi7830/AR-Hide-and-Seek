@@ -228,7 +228,7 @@ public class SinglePhoneGameController : MonoBehaviour
                 paintManager.CleanupHiderObjects();
 
                 // Disable the entire painting system.
-                paintManager.gameObject.SetActive(false);
+                //paintManager.gameObject.SetActive(false);
             }
             else
             {
@@ -293,7 +293,7 @@ public class SinglePhoneGameController : MonoBehaviour
         if (paintManager != null)
         {
             paintManager.CleanupHiderObjects();
-            paintManager.gameObject.SetActive(false);
+            //paintManager.gameObject.SetActive(false);
         }
     }
 }
