@@ -143,8 +143,8 @@ public class SinglePhoneGameController : MonoBehaviour
         if (switchMessageText != null)
         {
             switchMessageText.text =
-                "Hiding time is over\n" +
-                "Now switch to Hunter";
+                "Hiding Time is Over\n" +
+                "Now Switch to Seeker";
         }
 
         float remainingTime = switchDuration;
