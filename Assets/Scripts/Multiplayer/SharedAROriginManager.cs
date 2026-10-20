@@ -51,10 +51,19 @@ public class SharedAROriginManager :
     private bool originLocked =
         false;
 
+    private bool forceOriginLock =
+        false;
+
     private Vector3 positionSum =
         Vector3.zero;
 
     private Quaternion averagedRotation =
+        Quaternion.identity;
+
+    private Vector3 lockedOriginPosition =
+        Vector3.zero;
+
+    private Quaternion lockedOriginRotation =
         Quaternion.identity;
 
     private int sampleCount =
@@ -98,6 +107,24 @@ public class SharedAROriginManager :
                     OnTrackablesChanged
                 );
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (
+            !forceOriginLock ||
+            SharedOrigin == null
+        )
+        {
+            return;
+        }
+
+        // Keep the shared origin at the exact
+        // pose captured during initial calibration.
+        SharedOrigin.SetPositionAndRotation(
+            lockedOriginPosition,
+            lockedOriginRotation
+        );
     }
 
     private void OnTrackablesChanged(
@@ -296,6 +323,12 @@ public class SharedAROriginManager :
                 "SharedGameOrigin"
             );
 
+        // Keep SharedGameOrigin independent
+        // from AR trackables and AR anchors.
+        originObject.transform.SetParent(
+            null
+        );
+
         originObject.transform
             .SetPositionAndRotation(
                 position,
@@ -305,12 +338,20 @@ public class SharedAROriginManager :
         originObject.transform.localScale =
             Vector3.one;
 
+        // Save the calibrated pose permanently.
+        lockedOriginPosition =
+            position;
+
+        lockedOriginRotation =
+            rotation;
+
         SharedOrigin =
             originObject.transform;
 
-        // From this point onward,
-        // this transform is never changed.
         originLocked =
+            true;
+
+        forceOriginLock =
             true;
 
         if (
@@ -320,23 +361,26 @@ public class SharedAROriginManager :
             originDebugObject =
                 Instantiate(
                     originDebugPrefab,
-                    SharedOrigin.position,
-                    SharedOrigin.rotation
+                    SharedOrigin
                 );
 
+            // Sphere sits exactly at
+            // the SharedOrigin position.
             originDebugObject.transform
-                .SetParent(
-                    SharedOrigin,
-                    true
-                );
+                .localPosition =
+                Vector3.zero;
+
+            originDebugObject.transform
+                .localRotation =
+                Quaternion.identity;
         }
 
         Debug.Log(
-            "[SharedOrigin] Origin permanently LOCKED. " +
+            "[SharedOrigin] Origin permanently FROZEN. " +
             "Position = " +
-            SharedOrigin.position +
+            lockedOriginPosition +
             " | Rotation = " +
-            SharedOrigin.rotation.eulerAngles +
+            lockedOriginRotation.eulerAngles +
             " | Samples = " +
             sampleCount
         );

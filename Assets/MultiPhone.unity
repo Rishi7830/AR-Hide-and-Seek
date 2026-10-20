@@ -3115,7 +3115,7 @@ MonoBehaviour:
   calibrationTime: 1
   coordinateSetPanel: {fileID: 1896569272}
   panelDuration: 10
-  originDebugPrefab: {fileID: 7823139763231463376, guid: f1b45bf1bd5604f45bf03456410216c4, type: 3}
+  originDebugPrefab: {fileID: 6612034928311420177, guid: 35629ae4dab99d24abae87332023709a, type: 3}
 --- !u!1 &283557168
 GameObject:
   m_ObjectHideFlags: 0
