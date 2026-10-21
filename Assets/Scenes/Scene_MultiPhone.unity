@@ -4539,6 +4539,7 @@ MonoBehaviour:
   currentMeccha: {fileID: 0}
   stepDistance: 0.05
   rotationAngle: 15
+  networkMecchaManager: {fileID: 0}
 --- !u!1 &483247590
 GameObject:
   m_ObjectHideFlags: 0
@@ -4802,6 +4803,7 @@ MonoBehaviour:
   minDistanceBetweenSpawns: 0.5
   coordinateDisplay: {fileID: 1833165211}
   counterManager: {fileID: 2099970475}
+  networkMecchaManager: {fileID: 0}
 --- !u!1 &544277498
 GameObject:
   m_ObjectHideFlags: 0
@@ -13738,6 +13740,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HiderTimerController
   totalTimeInSeconds: 120
+  timerMode: 0
+  networkGameState: {fileID: 0}
   timerText: {fileID: 481383805}
   timerFillImage: {fileID: 577127299}
   timeUpPanel: {fileID: 1541454711}
@@ -13901,6 +13905,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HiderTimerController
   totalTimeInSeconds: 120
+  timerMode: 0
+  networkGameState: {fileID: 0}
   timerText: {fileID: 315196541}
   timerFillImage: {fileID: 257343791}
   timeUpPanel: {fileID: 262586843}
