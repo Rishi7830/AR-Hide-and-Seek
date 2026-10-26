@@ -30,30 +30,49 @@ public class NetworkMecchaFoundVisual :
 
     private Renderer[] mecchaRenderers;
 
-    private Color[][] originalColors;
-
-    private bool originalColorsCaptured =
-        false;
-
-    private bool previousFoundState =
-        false;
+    private MaterialPropertyBlock[]
+        propertyBlocks;
 
     private MultiplayerPhase
         previousPhase =
         (MultiplayerPhase)(-1);
 
+    private bool previousFoundState =
+        false;
+
+    private bool stateInitialized =
+        false;
+
     private void Awake()
     {
+        // Find all renderers on this Meccha.
         mecchaRenderers =
             GetComponentsInChildren<
                 Renderer
             >(
                 true
             );
+
+        propertyBlocks =
+            new MaterialPropertyBlock[
+                mecchaRenderers.Length
+            ];
+
+        for (
+            int i = 0;
+            i <
+            propertyBlocks.Length;
+            i++
+        )
+        {
+            propertyBlocks[i] =
+                new MaterialPropertyBlock();
+        }
     }
 
     private void Start()
     {
+        // Scene-level NetworkGameState.
         if (networkState == null)
         {
             networkState =
@@ -61,7 +80,6 @@ public class NetworkMecchaFoundVisual :
                     NetworkGameState
                 >();
         }
-
         if (identity == null)
         {
             identity =
@@ -69,29 +87,15 @@ public class NetworkMecchaFoundVisual :
                     NetworkMecchaIdentity
                 >();
         }
-
-        CaptureOriginalColors();
     }
 
     private void Update()
     {
         if (
             networkState == null ||
+            identity == null ||
             !networkState.IsNetworkReady
         )
-        {
-            return;
-        }
-
-        if (identity == null)
-        {
-            identity =
-                GetComponent<
-                    NetworkMecchaIdentity
-                >();
-        }
-
-        if (identity == null)
         {
             return;
         }
@@ -111,14 +115,11 @@ public class NetworkMecchaFoundVisual :
         MultiplayerPhase phase =
             networkState.Phase;
 
-        bool found =
-            data.Found;
+        // MECCHA FOUND
 
-        // FOUND STATE
-
-        if (found)
+        if (data.Found)
         {
-            SetAllMaterialColors(
+            ApplyColor(
                 foundColor
             );
 
@@ -128,10 +129,13 @@ public class NetworkMecchaFoundVisual :
             previousPhase =
                 phase;
 
+            stateInitialized =
+                true;
+
             return;
         }
 
-        // REVEAL PHASE
+        // REVEAL
 
         if (
             phase ==
@@ -157,7 +161,7 @@ public class NetworkMecchaFoundVisual :
                     pulseValue
                 );
 
-            SetAllMaterialColors(
+            ApplyColor(
                 pulseColor
             );
 
@@ -167,18 +171,24 @@ public class NetworkMecchaFoundVisual :
             previousPhase =
                 phase;
 
+            stateInitialized =
+                true;
+
             return;
         }
 
-        // NORMAL / SEARCHING / RESULT
-        // Restore original material colour when a Meccha is not found and Reveal is over.
+        // NORMAL GAMEPLAY
+
         if (
             previousFoundState ||
-            previousPhase ==
-                MultiplayerPhase.Reveal
+            (
+                stateInitialized &&
+                previousPhase ==
+                    MultiplayerPhase.Reveal
+            )
         )
         {
-            RestoreOriginalColors();
+            ClearColorOverride();
         }
 
         previousFoundState =
@@ -186,7 +196,12 @@ public class NetworkMecchaFoundVisual :
 
         previousPhase =
             phase;
+
+        stateInitialized =
+            true;
     }
+
+    // GET NETWORK DATA
 
     private bool TryGetNetworkMecchaData(
         int mecchaId,
@@ -220,7 +235,11 @@ public class NetworkMecchaFoundVisual :
         return false;
     }
 
-    private void CaptureOriginalColors()
+    // APPLY COLOR USING MATERIAL PROPERTY BLOCK
+
+    private void ApplyColor(
+        Color color
+    )
     {
         if (
             mecchaRenderers == null
@@ -229,221 +248,178 @@ public class NetworkMecchaFoundVisual :
             return;
         }
 
-        originalColors =
-            new Color[
-                mecchaRenderers.Length
-            ][];
-
         for (
-            int r = 0;
-            r <
+            int i = 0;
+            i <
             mecchaRenderers.Length;
-            r++
+            i++
         )
         {
             Renderer renderer =
-                mecchaRenderers[r];
+                mecchaRenderers[i];
 
             if (renderer == null)
             {
                 continue;
             }
 
-            Material[] materials =
-                renderer.materials;
+            MaterialPropertyBlock block =
+                propertyBlocks[i];
 
-            originalColors[r] =
-                new Color[
-                    materials.Length
-                ];
-
-            for (
-                int m = 0;
-                m <
-                materials.Length;
-                m++
-            )
+            if (block == null)
             {
-                if (
-                    materials[m] == null
+                block =
+                    new MaterialPropertyBlock();
+
+                propertyBlocks[i] =
+                    block;
+            }
+            renderer.GetPropertyBlock(
+                block
+            );
+
+            // URP / Standard common colour.
+            if (
+                HasBaseColorProperty(
+                    renderer
                 )
-                {
-                    continue;
-                }
-
-                originalColors[r][m] =
-                    GetMaterialColor(
-                        materials[m]
-                    );
-            }
-        }
-
-        originalColorsCaptured =
-            true;
-    }
-
-    private Color GetMaterialColor(
-        Material material
-    )
-    {
-        if (
-            material.HasProperty(
-                "_BaseColor"
-            )
-        )
-        {
-            return material.GetColor(
-                "_BaseColor"
-            );
-        }
-
-        if (
-            material.HasProperty(
-                "_Color"
-            )
-        )
-        {
-            return material.GetColor(
-                "_Color"
-            );
-        }
-
-        return Color.white;
-    }
-
-    private void SetMaterialColor(
-        Material material,
-        Color color
-    )
-    {
-        if (
-            material == null
-        )
-        {
-            return;
-        }
-
-        if (
-            material.HasProperty(
-                "_BaseColor"
-            )
-        )
-        {
-            material.SetColor(
-                "_BaseColor",
-                color
-            );
-        }
-
-        if (
-            material.HasProperty(
-                "_Color"
-            )
-        )
-        {
-            material.SetColor(
-                "_Color",
-                color
-            );
-        }
-    }
-
-    private void SetAllMaterialColors(
-        Color color
-    )
-    {
-        if (
-            mecchaRenderers == null
-        )
-        {
-            return;
-        }
-
-        foreach (
-            Renderer renderer
-            in mecchaRenderers
-        )
-        {
-            if (renderer == null)
-            {
-                continue;
-            }
-
-            Material[] materials =
-                renderer.materials;
-
-            foreach (
-                Material material
-                in materials
             )
             {
-                SetMaterialColor(
-                    material,
+                block.SetColor(
+                    "_BaseColor",
                     color
                 );
             }
 
-            renderer.materials =
-                materials;
+            if (
+                HasColorProperty(
+                    renderer
+                )
+            )
+            {
+                block.SetColor(
+                    "_Color",
+                    color
+                );
+            }
+
+            renderer.SetPropertyBlock(
+                block
+            );
         }
     }
 
-    private void RestoreOriginalColors()
+    // CLEAR OUR VISUAL OVERRIDE
+
+    private void ClearColorOverride()
     {
         if (
-            !originalColorsCaptured ||
-            mecchaRenderers == null ||
-            originalColors == null
+            mecchaRenderers == null
         )
         {
             return;
         }
 
         for (
-            int r = 0;
-            r <
+            int i = 0;
+            i <
             mecchaRenderers.Length;
-            r++
+            i++
         )
         {
             Renderer renderer =
-                mecchaRenderers[r];
+                mecchaRenderers[i];
 
-            if (
-                renderer == null ||
-                originalColors[r] == null
-            )
+            if (renderer == null)
             {
                 continue;
             }
+            renderer.SetPropertyBlock(
+                null
+            );
 
-            Material[] materials =
-                renderer.materials;
-
-            for (
-                int m = 0;
-                m <
-                materials.Length;
-                m++
+            if (
+                propertyBlocks[i] != null
             )
             {
-                if (
-                    materials[m] == null ||
-                    m >=
-                    originalColors[r].Length
-                )
-                {
-                    continue;
-                }
-
-                SetMaterialColor(
-                    materials[m],
-                    originalColors[r][m]
-                );
+                propertyBlocks[i].Clear();
             }
-
-            renderer.materials =
-                materials;
         }
+    }
+
+    // CHECK MATERIAL PROPERTIES
+
+    private bool HasBaseColorProperty(
+        Renderer renderer
+    )
+    {
+        if (
+            renderer == null ||
+            renderer.sharedMaterials == null
+        )
+        {
+            return false;
+        }
+
+        foreach (
+            Material material
+            in renderer.sharedMaterials
+        )
+        {
+            if (
+                material != null &&
+                material.HasProperty(
+                    "_BaseColor"
+                )
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasColorProperty(
+        Renderer renderer
+    )
+    {
+        if (
+            renderer == null ||
+            renderer.sharedMaterials == null
+        )
+        {
+            return false;
+        }
+
+        foreach (
+            Material material
+            in renderer.sharedMaterials
+        )
+        {
+            if (
+                material != null &&
+                material.HasProperty(
+                    "_Color"
+                )
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // CLEANUP
+
+    private void OnDisable()
+    {
+        ClearColorOverride();
+    }
+
+    private void OnDestroy()
+    {
+        ClearColorOverride();
     }
 }
