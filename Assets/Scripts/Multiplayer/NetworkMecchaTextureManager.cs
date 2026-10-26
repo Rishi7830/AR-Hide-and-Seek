@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Fusion;
 using Fusion.Sockets;
@@ -8,6 +9,10 @@ public class NetworkMecchaTextureManager :
     MonoBehaviour,
     INetworkRunnerCallbacks
 {
+    // ============================================================
+    // NETWORK REFERENCES
+    // ============================================================
+
     [Header("Network")]
     [SerializeField]
     private NetworkRunner runner;
@@ -23,17 +28,40 @@ public class NetworkMecchaTextureManager :
     private NetworkMecchaManager
         mecchaManager;
 
+    // ============================================================
+    // MESSAGE TYPE
+    // ============================================================
+
+    // Unique identifier for Meccha texture
+    // reliable-data messages.
     private const int TextureMessageType =
         77001;
 
+    // ============================================================
+    // RECEIVED TEXTURE CACHE
+    // ============================================================
+
+    // Key:
+    //     Meccha ID
+    //
+    // Value:
+    //     PNG texture bytes
+    //
+    // This allows the texture to arrive before
+    // the Seeker Meccha itself is spawned.
     private readonly Dictionary<
         int,
         byte[]
-    > receivedTextures =
-        new Dictionary<
-            int,
-            byte[]
-        >();
+    >
+        receivedTextures =
+            new Dictionary<
+                int,
+                byte[]
+            >();
+
+    // ============================================================
+    // ROUND STATE
+    // ============================================================
 
     private MultiplayerPhase previousPhase =
         (MultiplayerPhase)(-1);
@@ -41,25 +69,108 @@ public class NetworkMecchaTextureManager :
     private bool texturesSentThisRound =
         false;
 
+    // ============================================================
+    // RUNNER CALLBACK STATE
+    // ============================================================
+
+    private bool callbacksRegistered =
+        false;
+
+    private Coroutine
+        callbackRegistrationCoroutine;
+
+    // ============================================================
+    // START
+    // ============================================================
+
     private void Start()
     {
-        if (runner != null)
+        callbackRegistrationCoroutine =
+            StartCoroutine(
+                EnsureRunnerCallbacks()
+            );
+    }
+
+    // ============================================================
+    // WAIT FOR RUNNER
+    // ============================================================
+
+    private IEnumerator
+        EnsureRunnerCallbacks()
+    {
+        while (
+            runner == null ||
+            !runner.IsRunning
+        )
+        {
+            if (runner == null)
+            {
+                runner =
+                    FindFirstObjectByType<
+                        NetworkRunner
+                    >();
+            }
+
+            yield return null;
+        }
+
+        if (!callbacksRegistered)
         {
             runner.AddCallbacks(
                 this
             );
+
+            callbacksRegistered =
+                true;
+
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Registered with NetworkRunner. " +
+                "LocalPlayer = " +
+                runner.LocalPlayer
+            );
         }
+
+        callbackRegistrationCoroutine =
+            null;
     }
+
+    // ============================================================
+    // DESTROY
+    // ============================================================
 
     private void OnDestroy()
     {
-        if (runner != null)
+        if (
+            callbackRegistrationCoroutine !=
+            null
+        )
+        {
+            StopCoroutine(
+                callbackRegistrationCoroutine
+            );
+
+            callbackRegistrationCoroutine =
+                null;
+        }
+
+        if (
+            runner != null &&
+            callbacksRegistered
+        )
         {
             runner.RemoveCallbacks(
                 this
             );
+
+            callbacksRegistered =
+                false;
         }
     }
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
 
     private void Update()
     {
@@ -75,8 +186,10 @@ public class NetworkMecchaTextureManager :
         MultiplayerPhase phase =
             networkState.Phase;
 
-        // Send textures once when
-        // Hider gameplay finishes.
+        // ========================================================
+        // HIDER HIDING -> SEEKER SEARCHING
+        // ========================================================
+
         if (
             roleController.IsHider() &&
             !texturesSentThisRound &&
@@ -89,13 +202,22 @@ public class NetworkMecchaTextureManager :
             texturesSentThisRound =
                 true;
 
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Hider phase ended. " +
+                "Sending final Meccha textures."
+            );
+
             SendAllHiderTextures();
         }
 
-        // Prepare for another round.
+        // ========================================================
+        // NEW ROUND
+        // ========================================================
+
         if (
             phase ==
-            MultiplayerPhase.WaitingForPlayers &&
+                MultiplayerPhase.WaitingForPlayers &&
             previousPhase !=
                 MultiplayerPhase.WaitingForPlayers
         )
@@ -104,19 +226,44 @@ public class NetworkMecchaTextureManager :
                 false;
 
             receivedTextures.Clear();
+
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "New round. Texture cache cleared."
+            );
         }
 
         previousPhase =
             phase;
     }
 
+    // ============================================================
+    // SEND ALL HIDER TEXTURES
+    // ============================================================
+
     private void SendAllHiderTextures()
     {
         if (
             runner == null ||
-            networkState == null
+            !runner.IsRunning
         )
         {
+            Debug.LogWarning(
+                "[MecchaTextureNet] " +
+                "Cannot send textures because " +
+                "NetworkRunner is not running."
+            );
+
+            return;
+        }
+
+        if (networkState == null)
+        {
+            Debug.LogWarning(
+                "[MecchaTextureNet] " +
+                "NetworkGameState is missing."
+            );
+
             return;
         }
 
@@ -136,6 +283,12 @@ public class NetworkMecchaTextureManager :
             return;
         }
 
+        Debug.Log(
+            "[MecchaTextureNet] " +
+            "Preparing textures for Seeker " +
+            seeker
+        );
+
         NetworkMecchaIdentity[] identities =
             FindObjectsByType<
                 NetworkMecchaIdentity
@@ -143,6 +296,9 @@ public class NetworkMecchaTextureManager :
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None
             );
+
+        int sentCount =
+            0;
 
         foreach (
             NetworkMecchaIdentity identity
@@ -153,6 +309,10 @@ public class NetworkMecchaTextureManager :
             {
                 continue;
             }
+
+            // ====================================================
+            // FIND PAINTER
+            // ====================================================
 
             MecchaTexturePainter painter =
                 identity.GetComponent<
@@ -169,13 +329,38 @@ public class NetworkMecchaTextureManager :
                     );
             }
 
-            if (
-                painter == null ||
-                !painter.HasPaintedData()
-            )
+            if (painter == null)
             {
+                Debug.LogWarning(
+                    "[MecchaTextureNet] " +
+                    "No MecchaTexturePainter found " +
+                    "for Meccha ID " +
+                    identity.MecchaId
+                );
+
                 continue;
             }
+
+            // ====================================================
+            // CHECK WHETHER MECCHA WAS PAINTED
+            // ====================================================
+
+            if (!painter.HasPaintedData())
+            {
+                Debug.Log(
+                    "[MecchaTextureNet] " +
+                    "Meccha ID " +
+                    identity.MecchaId +
+                    " has no painted data. " +
+                    "Skipping."
+                );
+
+                continue;
+            }
+
+            // ====================================================
+            // ENCODE TEXTURE
+            // ====================================================
 
             byte[] pngData =
                 painter.GetPaintTexturePNG();
@@ -185,11 +370,22 @@ public class NetworkMecchaTextureManager :
                 pngData.Length == 0
             )
             {
+                Debug.LogWarning(
+                    "[MecchaTextureNet] " +
+                    "Meccha ID " +
+                    identity.MecchaId +
+                    " produced empty PNG data."
+                );
+
                 continue;
             }
 
             int mecchaId =
                 identity.MecchaId;
+
+            // ====================================================
+            // CREATE RELIABLE MESSAGE KEY
+            // ====================================================
 
             ReliableKey key =
                 ReliableKey.FromInts(
@@ -199,34 +395,69 @@ public class NetworkMecchaTextureManager :
                     0
                 );
 
+            // ====================================================
+            // SEND TO SEEKER
+            // ====================================================
+
             runner.SendReliableDataToPlayer(
                 seeker,
                 key,
                 pngData
             );
 
+            sentCount++;
+
             Debug.Log(
-                "[MecchaTextureNet] Sent texture. " +
+                "[MecchaTextureNet] " +
+                "Sent texture. " +
                 "ID = " +
                 mecchaId +
                 " | Bytes = " +
-                pngData.Length
+                pngData.Length +
+                " | To = " +
+                seeker
             );
         }
+
+        Debug.Log(
+            "[MecchaTextureNet] " +
+            "Finished sending textures. " +
+            "Count = " +
+            sentCount
+        );
     }
+
+    // ============================================================
+    // HANDLE RECEIVED TEXTURE
+    // ============================================================
 
     private void HandleReceivedTexture(
         ReliableKey key,
         byte[] data
     )
     {
+        // ========================================================
+        // ONLY PROCESS ON SEEKER
+        // ========================================================
+
         if (
             roleController == null ||
             !roleController.IsSeeker()
         )
         {
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Reliable texture arrived, " +
+                "but local player is not Seeker. " +
+                "Ignoring."
+            );
+
             return;
         }
+
+        // ========================================================
+        // DECODE MESSAGE KEY
+        // ========================================================
 
         key.GetInts(
             out int messageType,
@@ -240,31 +471,54 @@ public class NetworkMecchaTextureManager :
             TextureMessageType
         )
         {
+            Debug.LogWarning(
+                "[MecchaTextureNet] " +
+                "Received unknown reliable " +
+                "message type = " +
+                messageType
+            );
+
             return;
         }
+
+        // ========================================================
+        // VALIDATE DATA
+        // ========================================================
 
         if (
             data == null ||
             data.Length == 0
         )
         {
+            Debug.LogWarning(
+                "[MecchaTextureNet] " +
+                "Received empty texture data."
+            );
+
             return;
         }
 
-        // Keep a copy in case the Seeker
-        // Meccha has not spawned yet.
+        // ========================================================
+        // CACHE TEXTURE
+        // ========================================================
+
         receivedTextures[
             mecchaId
         ] =
             data;
 
         Debug.Log(
-            "[MecchaTextureNet] Received texture. " +
+            "[MecchaTextureNet] " +
+            "Received texture. " +
             "ID = " +
             mecchaId +
             " | Bytes = " +
             data.Length
         );
+
+        // ========================================================
+        // APPLY IMMEDIATELY IF MECCHA EXISTS
+        // ========================================================
 
         if (
             mecchaManager != null &&
@@ -280,14 +534,30 @@ public class NetworkMecchaTextureManager :
                 meccha
             );
         }
+        else
+        {
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Meccha ID " +
+                mecchaId +
+                " is not spawned yet. " +
+                "Texture cached for later."
+            );
+        }
     }
+
+    // ============================================================
+    // TRY APPLY CACHED TEXTURE
+    // ============================================================
 
     public void TryApplyCachedTexture(
         int mecchaId,
         GameObject meccha
     )
     {
-        if (meccha == null)
+        if (
+            meccha == null
+        )
         {
             return;
         }
@@ -298,11 +568,26 @@ public class NetworkMecchaTextureManager :
         );
     }
 
+    // ============================================================
+    // APPLY TEXTURE TO MECCHA
+    // ============================================================
+
     private void ApplyTexture(
         int mecchaId,
         GameObject meccha
     )
     {
+        if (
+            meccha == null
+        )
+        {
+            return;
+        }
+
+        // ========================================================
+        // FIND CACHED PNG
+        // ========================================================
+
         if (
             !receivedTextures.TryGetValue(
                 mecchaId,
@@ -310,8 +595,18 @@ public class NetworkMecchaTextureManager :
             )
         )
         {
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "No cached texture yet for ID " +
+                mecchaId
+            );
+
             return;
         }
+
+        // ========================================================
+        // FIND PAINTER
+        // ========================================================
 
         MecchaTexturePainter painter =
             meccha.GetComponent<
@@ -332,28 +627,51 @@ public class NetworkMecchaTextureManager :
         {
             Debug.LogWarning(
                 "[MecchaTextureNet] " +
-                "No MecchaTexturePainter found for ID " +
+                "No MecchaTexturePainter found " +
+                "for Seeker Meccha ID " +
                 mecchaId
             );
 
             return;
         }
 
-        if (
+        // ========================================================
+        // APPLY PNG
+        // ========================================================
+
+        bool applied =
             painter.ApplyNetworkPaintPNG(
                 pngData
-            )
-        )
+            );
+
+        if (applied)
         {
             Debug.Log(
                 "[MecchaTextureNet] " +
-                "Applied texture to Seeker Meccha ID " +
+                "Applied texture to Seeker " +
+                "Meccha ID " +
+                mecchaId
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "[MecchaTextureNet] " +
+                "Failed to apply texture to " +
+                "Seeker Meccha ID " +
                 mecchaId
             );
         }
     }
 
-    // Fusion 2.0.x callback.
+    // ============================================================
+    // FUSION RELIABLE DATA
+    // ============================================================
+
+    // ------------------------------------------------------------
+    // Fusion 2.0.x
+    // ------------------------------------------------------------
+
     public void OnReliableDataReceived(
         NetworkRunner runner,
         PlayerRef player,
@@ -361,15 +679,44 @@ public class NetworkMecchaTextureManager :
         ArraySegment<byte> data
     )
     {
-        // Only accept texture data from the Hider.
+        Debug.Log(
+            "[MecchaTextureNet] " +
+            "RELIABLE DATA ARRIVED! " +
+            "CallbackPlayer=" +
+            player +
+            " | LocalPlayer=" +
+            runner.LocalPlayer +
+            " | Bytes=" +
+            data.Count
+        );
+
+        // DO NOT compare this PlayerRef to
+        // networkState.HiderPlayer.
+        //
+        // SendReliableDataToPlayer() already
+        // targets the intended Seeker.
+        //
+        // We only need to make sure THIS
+        // device is acting as the Seeker.
+
         if (
-            networkState != null &&
-            player !=
-                networkState.HiderPlayer
+            roleController == null ||
+            !roleController.IsSeeker()
         )
         {
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Reliable texture arrived, " +
+                "but local player is not Seeker. " +
+                "Ignoring."
+            );
+
             return;
         }
+
+        // ========================================================
+        // COPY ARRAY SEGMENT
+        // ========================================================
 
         byte[] copy =
             new byte[
@@ -389,13 +736,20 @@ public class NetworkMecchaTextureManager :
             );
         }
 
+        // ========================================================
+        // PROCESS
+        // ========================================================
+
         HandleReceivedTexture(
             key,
             copy
         );
     }
 
-    // Fusion 2.1 callback.
+    // ------------------------------------------------------------
+    // Fusion 2.1+
+    // ------------------------------------------------------------
+
     public void OnReliableDataReceived(
         NetworkRunner runner,
         PlayerRef player,
@@ -403,12 +757,35 @@ public class NetworkMecchaTextureManager :
         ReadOnlySpan<byte> data
     )
     {
+        Debug.Log(
+            "[MecchaTextureNet] " +
+            "RELIABLE DATA ARRIVED! " +
+            "CallbackPlayer=" +
+            player +
+            " | LocalPlayer=" +
+            runner.LocalPlayer +
+            " | Bytes=" +
+            data.Length
+        );
+
+        // Only process texture data on the Seeker.
+        //
+        // IMPORTANT:
+        // Do NOT compare player against
+        // networkState.HiderPlayer.
+
         if (
-            networkState != null &&
-            player !=
-                networkState.HiderPlayer
+            roleController == null ||
+            !roleController.IsSeeker()
         )
         {
+            Debug.Log(
+                "[MecchaTextureNet] " +
+                "Reliable texture arrived, " +
+                "but local player is not Seeker. " +
+                "Ignoring."
+            );
+
             return;
         }
 
@@ -418,6 +795,10 @@ public class NetworkMecchaTextureManager :
         );
     }
 
+    // ============================================================
+    // OTHER FUSION CALLBACKS
+    // ============================================================
+
     public void OnReliableDataProgress(
         NetworkRunner runner,
         PlayerRef player,
@@ -425,6 +806,7 @@ public class NetworkMecchaTextureManager :
         float progress
     )
     {
+        // Not required for this implementation.
     }
 
     public void OnPlayerJoined(
@@ -478,8 +860,7 @@ public class NetworkMecchaTextureManager :
 
     public void OnConnectRequest(
         NetworkRunner runner,
-        NetworkRunnerCallbackArgs
-            .ConnectRequest request,
+        NetworkRunnerCallbackArgs.ConnectRequest request,
         byte[] token
     )
     {
