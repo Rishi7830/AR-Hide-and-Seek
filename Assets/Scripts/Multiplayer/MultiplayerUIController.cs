@@ -3,7 +3,8 @@ using Fusion;
 using TMPro;
 using UnityEngine;
 
-public class MultiplayerUIController : MonoBehaviour
+public class MultiplayerUIController :
+    MonoBehaviour
 {
     [Header("Network")]
     [SerializeField]
@@ -46,6 +47,37 @@ public class MultiplayerUIController : MonoBehaviour
     [SerializeField]
     private GameObject resultPanel;
 
+    [Header("Hider End-Game Panels")]
+    [SerializeField]
+    private GameObject
+        hiderRevealPanel;
+
+    [SerializeField]
+    private GameObject
+        hiderResultPanel;
+
+    [Header("Meccha Found Popups")]
+    [SerializeField]
+    private GameObject
+        hiderFoundPanel;
+
+    [SerializeField]
+    private GameObject
+        seekerFoundPanel;
+
+    [SerializeField]
+    private float foundPopupDuration =
+        2f;
+
+    [Header("Found Popup Text")]
+    [SerializeField]
+    private TMP_Text
+        hiderFoundText;
+
+    [SerializeField]
+    private TMP_Text
+        seekerFoundText;
+
     [Header("Texts")]
     [SerializeField]
     private TMP_Text
@@ -67,8 +99,24 @@ public class MultiplayerUIController : MonoBehaviour
     private TMP_Text
         resultText;
 
+    [Header("Hider Reveal UI")]
+    [SerializeField]
+    private TMP_Text
+        hiderRevealTimerText;
+
+    [Header("Hider Result UI")]
+    [SerializeField]
+    private TMP_Text
+        hiderResultText;
+
+    // STATE
+
     private MultiplayerPhase
         previousPhase;
+    private int previousMecchasFound =
+        0;
+    private float foundPopupEndTime =
+        -1f;
 
     private void Start()
     {
@@ -79,12 +127,31 @@ public class MultiplayerUIController : MonoBehaviour
             hidingEndedPanel
                 .SetActive(false);
         }
+
+        HideFoundPopup();
+
+        if (
+            hiderRevealPanel != null
+        )
+        {
+            hiderRevealPanel
+                .SetActive(false);
+        }
+
+        if (
+            hiderResultPanel != null
+        )
+        {
+            hiderResultPanel
+                .SetActive(false);
+        }
     }
 
     private void Update()
     {
         if (
             networkState == null ||
+            roleController == null ||
             !networkState.IsNetworkReady ||
             networkState.Runner == null
         )
@@ -98,15 +165,36 @@ public class MultiplayerUIController : MonoBehaviour
         MultiplayerPhase phase =
             networkState.Phase;
 
+        // MAIN GAME PANELS
+
         UpdatePanels(
             role,
             phase
         );
 
+        // TIMERS
+
         UpdateTimers();
 
+        // MECCHA FOUND POPUP
+
+        CheckMecchaFound();
+
+        // POPUP TIMER
+
         if (
-            phase != previousPhase
+            Time.time >
+            foundPopupEndTime
+        )
+        {
+            HideFoundPopup();
+        }
+
+        // PHASE CHANGES
+
+        if (
+            phase !=
+            previousPhase
         )
         {
             HandlePhaseChanged(
@@ -120,11 +208,15 @@ public class MultiplayerUIController : MonoBehaviour
         }
     }
 
+    // MAIN PANELS
+
     private void UpdatePanels(
         MultiplayerRole role,
         MultiplayerPhase phase
     )
     {
+        // ROLE SELECTION
+
         SetPanel(
             roleSelectionPanel,
             phase ==
@@ -133,6 +225,8 @@ public class MultiplayerUIController : MonoBehaviour
             role ==
                 MultiplayerRole.None
         );
+
+        // WAITING FOR OTHER PLAYER
 
         bool waitingForOtherPlayer =
             phase ==
@@ -146,6 +240,8 @@ public class MultiplayerUIController : MonoBehaviour
             waitingForOtherPlayer
         );
 
+        // SCAN ORIGIN
+
         bool scanOrigin =
             phase ==
                 MultiplayerPhase
@@ -156,6 +252,8 @@ public class MultiplayerUIController : MonoBehaviour
             scanOriginPanel,
             scanOrigin
         );
+
+        // HIDER GAMEPLAY
 
         bool hiderPlaying =
             phase ==
@@ -169,6 +267,8 @@ public class MultiplayerUIController : MonoBehaviour
             hiderPlaying
         );
 
+        // SEEKER WAITING
+
         bool seekerWaiting =
             phase ==
                 MultiplayerPhase
@@ -181,24 +281,31 @@ public class MultiplayerUIController : MonoBehaviour
             seekerWaiting
         );
 
+        // SEEKER MAIN GAME PANEL
+
         bool seekerPanelRequired =
             role ==
-            MultiplayerRole.Seeker &&
-        (
-        phase ==
-            MultiplayerPhase.SeekerSearching ||
-        phase ==
-            MultiplayerPhase.Reveal ||
-        phase ==
-            MultiplayerPhase.Result
-        );
+                MultiplayerRole.Seeker &&
+            (
+                phase ==
+                    MultiplayerPhase
+                        .SeekerSearching ||
+                phase ==
+                    MultiplayerPhase
+                        .Reveal ||
+                phase ==
+                    MultiplayerPhase
+                        .Result
+            );
 
         SetPanel(
             seekerGamePanel,
             seekerPanelRequired
         );
 
-        bool reveal =
+        // SEEKER REVEAL
+
+        bool seekerReveal =
             phase ==
                 MultiplayerPhase.Reveal &&
             role ==
@@ -206,10 +313,12 @@ public class MultiplayerUIController : MonoBehaviour
 
         SetPanel(
             revealPanel,
-            reveal
+            seekerReveal
         );
 
-        bool result =
+        // SEEKER RESULT
+
+        bool seekerResult =
             phase ==
                 MultiplayerPhase.Result &&
             role ==
@@ -217,44 +326,62 @@ public class MultiplayerUIController : MonoBehaviour
 
         SetPanel(
             resultPanel,
-            result
+            seekerResult
         );
 
+        // HIDER REVEAL
+
+        bool hiderReveal =
+            phase ==
+                MultiplayerPhase.Reveal &&
+            role ==
+                MultiplayerRole.Hider;
+
+        SetPanel(
+            hiderRevealPanel,
+            hiderReveal
+        );
+
+        // HIDER RESULT
+
+        bool hiderResult =
+            phase ==
+                MultiplayerPhase.Result &&
+            role ==
+                MultiplayerRole.Hider;
+
+        SetPanel(
+            hiderResultPanel,
+            hiderResult
+        );
+
+        // RESULT TEXT - SEEKER
+
         if (
-            result &&
+            seekerResult &&
             resultText != null
         )
         {
-            switch (
-                networkState.Result
-            )
-            {
-                case MultiplayerResult
-                    .SeekerWin:
-
-                    resultText.text =
-                        "Seekers WONN!!!";
-
-                    break;
-
-                case MultiplayerResult
-                    .HiderWin:
-
-                    resultText.text =
-                        "Hiders WONN!!";
-
-                    break;
-
-                case MultiplayerResult
-                    .Neither:
-
-                    resultText.text =
-                        "Neither Won - " +
-                        "No Meccha Placed :(";
-
-                    break;
-            }
+            resultText.text =
+                GetResultMessage(
+                    networkState.Result
+                );
         }
+
+        // RESULT TEXT - HIDER
+
+        if (
+            hiderResult &&
+            hiderResultText != null
+        )
+        {
+            hiderResultText.text =
+                GetResultMessage(
+                    networkState.Result
+                );
+        }
+
+        // REMAINING MECCHA
 
         if (
             remainingMecchaText !=
@@ -268,8 +395,12 @@ public class MultiplayerUIController : MonoBehaviour
         }
     }
 
+    // TIMERS
+
     private void UpdateTimers()
     {
+        // HIDER TIMER
+
         float hidingTime =
             networkState
                 .GetHiderRemainingTime();
@@ -287,6 +418,8 @@ public class MultiplayerUIController : MonoBehaviour
                 hidingText;
         }
 
+        // SEEKER WAITING TIMER
+
         if (
             seekerWaitingTimerText !=
             null
@@ -295,6 +428,8 @@ public class MultiplayerUIController : MonoBehaviour
             seekerWaitingTimerText.text =
                 hidingText;
         }
+
+        // SEEKER SEARCH TIMER
 
         if (
             seekerTimerText != null
@@ -306,7 +441,151 @@ public class MultiplayerUIController : MonoBehaviour
                         .GetSeekerRemainingTime()
                 );
         }
+
+        // HIDER REVEAL TIMER
+
+        if (
+            hiderRevealTimerText !=
+            null &&
+            networkState.Phase ==
+                MultiplayerPhase.Reveal
+        )
+        {
+            float revealTime =
+                networkState
+                    .RevealTimer
+                    .RemainingTime(
+                        networkState.Runner
+                    )
+                    ?? 0f;
+
+            hiderRevealTimerText.text =
+                FormatTime(
+                    revealTime
+                );
+        }
+        // EXISTING SEEKER REVEAL TIMER
     }
+
+    // MECCHA FOUND
+
+    private void CheckMecchaFound()
+    {
+        if (
+            networkState.Phase !=
+            MultiplayerPhase.SeekerSearching
+        )
+        {
+            previousMecchasFound =
+                networkState.MecchasFound;
+
+            return;
+        }
+
+        if (
+            networkState.MecchasFound >
+            previousMecchasFound
+        )
+        {
+            ShowMecchaFoundPopup();
+        }
+
+        previousMecchasFound =
+            networkState.MecchasFound;
+    }
+
+    // SHOW MECCHA FOUND POPUP
+
+    private void ShowMecchaFoundPopup()
+    {
+        string message =
+            networkState.MecchasFound +
+            " Meccha Found, " +
+            networkState.RemainingMecchas +
+            " Meccha Remaining";
+
+        MultiplayerRole role =
+            roleController.GetLocalRole();
+
+        // HIDER PHONE
+
+        if (
+            role ==
+            MultiplayerRole.Hider
+        )
+        {
+            if (
+                hiderFoundPanel != null
+            )
+            {
+                hiderFoundPanel.SetActive(
+                    true
+                );
+            }
+
+            if (
+                hiderFoundText != null
+            )
+            {
+                hiderFoundText.text =
+                    message;
+            }
+        }
+
+        // SEEKER PHONE
+
+        if (
+            role ==
+            MultiplayerRole.Seeker
+        )
+        {
+            if (
+                seekerFoundPanel != null
+            )
+            {
+                seekerFoundPanel.SetActive(
+                    true
+                );
+            }
+
+            if (
+                seekerFoundText != null
+            )
+            {
+                seekerFoundText.text =
+                    message;
+            }
+        }
+
+        foundPopupEndTime =
+            Time.time +
+            foundPopupDuration;
+    }
+
+    // HIDE FOUND POPUP
+
+    private void HideFoundPopup()
+    {
+        if (
+            hiderFoundPanel != null
+        )
+        {
+            hiderFoundPanel.SetActive(
+                false
+            );
+        }
+
+        if (
+            seekerFoundPanel != null
+        )
+        {
+            seekerFoundPanel.SetActive(
+                false
+            );
+        }
+    }
+
+    // PHASE CHANGED
 
     private void HandlePhaseChanged(
         MultiplayerRole role,
@@ -314,6 +593,8 @@ public class MultiplayerUIController : MonoBehaviour
         MultiplayerPhase newPhase
     )
     {
+        // HIDER HIDING -> SEEKER SEARCHING
+
         if (
             role ==
                 MultiplayerRole.Hider &&
@@ -329,7 +610,72 @@ public class MultiplayerUIController : MonoBehaviour
                 ShowHidingEndedPanel()
             );
         }
+
+        // ENTER REVEAL
+
+        if (
+            newPhase ==
+            MultiplayerPhase.Reveal
+        )
+        {
+            HideFoundPopup();
+
+            Debug.Log(
+                "[MultiplayerUI] " +
+                "Network-wide Reveal Phase started."
+            );
+        }
+
+        // ENTER RESULT
+
+        if (
+            newPhase ==
+            MultiplayerPhase.Result
+        )
+        {
+            HideFoundPopup();
+
+            Debug.Log(
+                "[MultiplayerUI] " +
+                "Network-wide Result Phase started. " +
+                "Result = " +
+                networkState.Result
+            );
+        }
+
+        // NEW ROUND
+
+        if (
+            newPhase ==
+            MultiplayerPhase.WaitingForPlayers
+        )
+        {
+            previousMecchasFound =
+                0;
+
+            HideFoundPopup();
+
+            if (
+                hiderRevealPanel !=
+                null
+            )
+            {
+                hiderRevealPanel
+                    .SetActive(false);
+            }
+
+            if (
+                hiderResultPanel !=
+                null
+            )
+            {
+                hiderResultPanel
+                    .SetActive(false);
+            }
+        }
     }
+
+    // HIDING ENDED PANEL
 
     private IEnumerator
         ShowHidingEndedPanel()
@@ -353,13 +699,53 @@ public class MultiplayerUIController : MonoBehaviour
             .SetActive(false);
     }
 
+    // RESULT MESSAGE
+
+    private string GetResultMessage(
+        MultiplayerResult result
+    )
+    {
+        switch (
+            result
+        )
+        {
+            case MultiplayerResult
+                .SeekerWin:
+
+                return
+                    "Seekers WONN!!!";
+
+            case MultiplayerResult
+                .HiderWin:
+
+                return
+                    "Hiders WONN!!";
+
+            case MultiplayerResult
+                .Neither:
+
+                return
+                    "Neither Won - " +
+                    "No Meccha Placed :(";
+
+            default:
+
+                return "";
+        }
+    }
+
+    // FORMAT TIMER
+
     private string FormatTime(
         float seconds
     )
     {
         int totalSeconds =
             Mathf.CeilToInt(
-                seconds
+                Mathf.Max(
+                    0f,
+                    seconds
+                )
             );
 
         int minutes =
@@ -374,6 +760,8 @@ public class MultiplayerUIController : MonoBehaviour
             remainingSeconds
                 .ToString("00");
     }
+
+    // PANEL HELPER
 
     private void SetPanel(
         GameObject panel,

@@ -585,6 +585,8 @@ GameObject:
   - component: {fileID: 3480094147501022498}
   - component: {fileID: 5559979601561494786}
   - component: {fileID: 2703719423559095962}
+  - component: {fileID: 3758032121082944196}
+  - component: {fileID: 7599448304681242346}
   m_Layer: 6
   m_Name: Meccha_Horizontal
   m_TagString: Untagged
@@ -645,6 +647,36 @@ MonoBehaviour:
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   revealRedColor: {r: 1, g: 0, b: 0, a: 1}
   revealWhiteColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &3758032121082944196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2319322727971390821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96e1a4ffedd663c4ab842a5575228e1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkMecchaFoundVisual
+  networkState: {fileID: 0}
+  identity: {fileID: 7599448304681242346}
+  foundColor: {r: 1, g: 0, b: 0, a: 1}
+  revealRedColor: {r: 1, g: 0, b: 0, a: 1}
+  revealWhiteColor: {r: 1, g: 1, b: 1, a: 1}
+  pulseSpeed: 2
+--- !u!114 &7599448304681242346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2319322727971390821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8bb30c3dce493c43bc898846bb303f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkMecchaIdentity
 --- !u!1 &2372834175558222101
 GameObject:
   m_ObjectHideFlags: 0
