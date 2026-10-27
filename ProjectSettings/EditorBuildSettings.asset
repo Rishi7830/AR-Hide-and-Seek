@@ -14,10 +14,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/Scene_MultiPhone.unity
     guid: f2adcb6f74d309c4abeecbbb8a780c67
-  - enabled: 0
+  - enabled: 1
     path: Assets/MultiPhone.unity
     guid: cdf6ac2ca16a34544ad4ee42ab65b50d
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Stereo_Multiphone.unity
     guid: 625c17d6442ad184bbdc95545fc75fdc
   m_configObjects:

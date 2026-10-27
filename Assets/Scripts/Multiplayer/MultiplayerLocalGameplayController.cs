@@ -33,6 +33,10 @@ public class MultiplayerLocalGameplayController :
     [SerializeField]
     private GameObject handTrackingCanvas;
 
+    [SerializeField]
+    private StereoViewController
+    stereoController;
+
     [Header("Seeker Gun Systems")]
     [SerializeField]
     private GameObject hunterGunManager;
@@ -266,6 +270,27 @@ public class MultiplayerLocalGameplayController :
         SetMecchaScoreSystemActive(
             seekerScore
         );
+
+        // Stereo is enabled for the entire Seeker experience,
+        // including AprilTag scanning, coordinate setup,
+        // waiting, searching, reveal and result.
+        bool seekerStereo =
+            role ==
+                MultiplayerRole.Seeker;
+
+        if (
+            stereoController != null
+        )
+        {
+            if (seekerStereo)
+            {
+                stereoController.EnableStereo();
+            }
+            else
+            {
+                stereoController.DisableStereo();
+            }
+        }
 
         Debug.Log(
             "[MultiplayerLocal] Role=" +

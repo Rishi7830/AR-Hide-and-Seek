@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 799509350906380191}
   - component: {fileID: 440310920241318176}
   - component: {fileID: 8550687217963410252}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Rifle_Black
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -88,7 +88,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8773685565972757510}
   - component: {fileID: 6405852163050096886}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: barrel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -185,7 +185,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8830900409298797629}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -217,7 +217,7 @@ GameObject:
   m_Component:
   - component: {fileID: 434681571030314810}
   - component: {fileID: 6785656924730188613}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: frontsight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -314,7 +314,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5674029199070396255}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: HunterGunRack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -347,7 +347,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3869219052521209413}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ejection
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -379,7 +379,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9128052157413635523}
   - component: {fileID: 2691747019750560019}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: handguard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -476,7 +476,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4808705707202711078}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: boltforwardassist
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -508,7 +508,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7997842933935280863}
   - component: {fileID: 2009159994497888524}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: muzzlebrake
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -606,7 +606,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5360573271678530041}
   - component: {fileID: 288146670738575115}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: trigger 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -704,7 +704,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6587136901400544898}
   - component: {fileID: 403245558978986611}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: body 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -801,7 +801,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2648972069316848150}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -846,7 +846,7 @@ GameObject:
   - component: {fileID: 3738636770996079157}
   - component: {fileID: 3823812372306035951}
   - component: {fileID: 8807608472829508269}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: MuzzleFlash
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5739,7 +5739,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5177364439009410909}
   - component: {fileID: 6137639945701285852}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: mag 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5836,7 +5836,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8318923311138152286}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5868,7 +5868,7 @@ GameObject:
   m_Component:
   - component: {fileID: 93278489031360210}
   - component: {fileID: 4037179640867896497}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: handguard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5965,7 +5965,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 18344894500791675}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: lever
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5997,7 +5997,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1332389027833519071}
   - component: {fileID: 7771157007753317650}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stockpipe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6094,7 +6094,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7721446970652203439}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: mag
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6125,7 +6125,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9187616465284374518}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: trigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6157,7 +6157,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4033452387402459542}
   - component: {fileID: 4415465788965740970}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: mag 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6254,7 +6254,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2466498775712234827}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6285,7 +6285,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5827289686377137239}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: GunMuzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6318,7 +6318,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2319894685859172107}
   - component: {fileID: 5503790766517610905}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: lever 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6416,7 +6416,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3442150060818065739}
   - component: {fileID: 4325386848839090168}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: muzzlebrake
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6514,7 +6514,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5886630054304987213}
   - component: {fileID: 8145056415591322930}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: frontsight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6612,7 +6612,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8214161171837257499}
   - component: {fileID: 1070246843081012286}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stockpipe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6710,7 +6710,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8136026301357351733}
   - component: {fileID: 2064438383823627186}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: boltforwardassist1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6807,7 +6807,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 846213018698945334}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: trigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6838,7 +6838,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6198186391605735819}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6870,7 +6870,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4614816397698236846}
   - component: {fileID: 9180383948623829492}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: rearsight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6968,7 +6968,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4758810550208086535}
   - component: {fileID: 2597100564411045871}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: lever 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7065,7 +7065,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5523858119131354208}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7109,7 +7109,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1766358206832401731}
   - component: {fileID: 8416663083120434628}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: boltforwardassist1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7206,7 +7206,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2240177024774641007}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: mag
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7237,7 +7237,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 525903642210440094}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7269,7 +7269,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2534837049658299866}
   - component: {fileID: 7922737800976727045}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: body 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7366,7 +7366,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8394585095905470907}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: lever
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7397,7 +7397,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4723317255937569413}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ejection
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7428,7 +7428,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3928641230956954342}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: boltforwardassist
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7460,7 +7460,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8123624268971747484}
   - component: {fileID: 9075894976924288678}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stock 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7558,7 +7558,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1652287642566952411}
   - component: {fileID: 8010106660601484209}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: barrel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7657,7 +7657,7 @@ GameObject:
   - component: {fileID: 1518983794070023025}
   - component: {fileID: 4195821611365099622}
   - component: {fileID: 6911581946768613958}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: MuzzleFlash
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12549,7 +12549,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5962651349960059124}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: GunMuzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12582,7 +12582,7 @@ GameObject:
   m_Component:
   - component: {fileID: 833813207685986383}
   - component: {fileID: 1558152955489138896}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stock 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12679,7 +12679,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1059202555890485501}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: stock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12712,7 +12712,7 @@ GameObject:
   - component: {fileID: 9162238890934940511}
   - component: {fileID: 2499302782254019283}
   - component: {fileID: 377903554492064367}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Rifle_Tan
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12789,7 +12789,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8537733532603267310}
   - component: {fileID: 7479311563075085081}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: rearsight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12887,7 +12887,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3639482740301710250}
   - component: {fileID: 7751845462052778365}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: trigger 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}

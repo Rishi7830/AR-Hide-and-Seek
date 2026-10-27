@@ -14857,6 +14857,7 @@ MonoBehaviour:
   planeManager: {fileID: 151853166}
   mediaPipeHandManager: {fileID: 26609055}
   handTrackingCanvas: {fileID: 673310402}
+  stereoController: {fileID: 0}
   hunterGunManager: {fileID: 263564811}
   hunterGunHandController: {fileID: 2007437482}
   hunterGunPickupController: {fileID: 325190817}

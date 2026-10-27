@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5696040515447278788}
   - component: {fileID: 7089863416715690298}
   - component: {fileID: 1690347134528241157}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -121,7 +121,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4490848824033247637}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: AprilTagOrigin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
