@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public class NetworkMecchaIdentity : MonoBehaviour
+public class NetworkMecchaIdentity :
+    MonoBehaviour
 {
     public int MecchaId
     {
@@ -9,6 +10,12 @@ public class NetworkMecchaIdentity : MonoBehaviour
     }
 
     public int MecchaType
+    {
+        get;
+        private set;
+    }
+
+    public bool IsInitialized
     {
         get;
         private set;
@@ -24,5 +31,8 @@ public class NetworkMecchaIdentity : MonoBehaviour
 
         MecchaType =
             type;
+
+        IsInitialized =
+            true;
     }
 }

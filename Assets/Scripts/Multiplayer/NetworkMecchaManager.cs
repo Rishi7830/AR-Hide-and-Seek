@@ -33,9 +33,6 @@ public class NetworkMecchaManager :
     private int nextMecchaId =
         1;
 
-    // Store the real Hider Mecchas so
-    // their shared poses can be updated
-    // after an InitialAprilTag rescan.
     private Dictionary<int, GameObject>
         hiderMecchas =
             new Dictionary<
@@ -43,12 +40,16 @@ public class NetworkMecchaManager :
                 GameObject
             >();
 
+    // SEEKER MECCHAS
+
     private Dictionary<int, GameObject>
         seekerMecchas =
             new Dictionary<
                 int,
                 GameObject
             >();
+
+    // REGISTER HIDER MECCHA
 
     public void RegisterHiderMeccha(
         GameObject meccha,
@@ -66,10 +67,14 @@ public class NetworkMecchaManager :
             return;
         }
 
+        // FIND IDENTITY
+
         NetworkMecchaIdentity identity =
             meccha.GetComponent<
                 NetworkMecchaIdentity
             >();
+
+        // ADD IDENTITY IF MISSING
 
         if (identity == null)
         {
@@ -77,10 +82,23 @@ public class NetworkMecchaManager :
                 meccha.AddComponent<
                     NetworkMecchaIdentity
                 >();
+        }
 
+        if (!identity.IsInitialized)
+        {
             identity.Initialize(
                 nextMecchaId,
                 type
+            );
+
+            Debug.Log(
+                "[MecchaSync HIDER] " +
+                "Assigned Meccha ID=" +
+                identity.MecchaId +
+                " | Type=" +
+                identity.MecchaType +
+                " | Object=" +
+                meccha.name
             );
 
             nextMecchaId++;
@@ -94,17 +112,21 @@ public class NetworkMecchaManager :
                 );
         }
 
-        // Remember the physical Hider
-        // Meccha for later origin rescans.
+        // STORE HIDER MECCHA
+
         hiderMecchas[
             identity.MecchaId
         ] =
             meccha;
 
+        // SEND INITIAL POSE
+
         SyncHiderMeccha(
             meccha
         );
     }
+
+    // SYNC HIDER MECCHA
 
     public void SyncHiderMeccha(
         GameObject meccha
@@ -139,6 +161,8 @@ public class NetworkMecchaManager :
             return;
         }
 
+        // CONVERT WORLD POSE TO SHARED ORIGIN POSE
+
         Vector3 localPosition =
             originManager
                 .WorldToSharedPosition(
@@ -156,13 +180,16 @@ public class NetworkMecchaManager :
                 );
 
         Debug.Log(
-            "[MecchaSync HIDER] ID=" +
+            "[MecchaSync HIDER] " +
+            "ID=" +
             identity.MecchaId +
             " | World=" +
             meccha.transform.position +
             " | Shared=" +
             localPosition
         );
+
+        // SEND TO NETWORK STATE
 
         networkState
             .RequestMecchaUpdate(
@@ -172,6 +199,8 @@ public class NetworkMecchaManager :
                 localRotation
             );
     }
+
+    // RESYNC ALL HIDER MECCHAS AFTER ORIGIN RESCAN
 
     public void
         ResyncAllHiderMecchasAfterOriginChange()
@@ -217,16 +246,14 @@ public class NetworkMecchaManager :
                 continue;
             }
 
-            // The Hider Meccha itself is not
-            // moved. Only its coordinates
-            // relative to the NEW origin
-            // are calculated again.
             SyncHiderMeccha(
                 pair.Value
             );
 
             syncedCount++;
         }
+
+        // REMOVE INVALID REFERENCES
 
         foreach (
             int id
@@ -239,12 +266,15 @@ public class NetworkMecchaManager :
         }
 
         Debug.Log(
-            "[MecchaSync HIDER] SharedOrigin updated. " +
+            "[MecchaSync HIDER] " +
+            "SharedOrigin updated. " +
             "Re-synced " +
             syncedCount +
             " Meccha(s)."
         );
     }
+
+    // REMOVE HIDER MECCHA
 
     public void RemoveHiderMeccha(
         GameObject meccha
@@ -265,10 +295,12 @@ public class NetworkMecchaManager :
             return;
         }
 
+        // Remove from local Hider dictionary.
         hiderMecchas.Remove(
             identity.MecchaId
         );
 
+        // Remove from network.
         if (
             networkState != null &&
             networkState.IsNetworkReady
@@ -280,6 +312,8 @@ public class NetworkMecchaManager :
                 );
         }
     }
+
+    // REPORT MECCHA FOUND
 
     public void ReportMecchaFound(
         GameObject meccha
@@ -334,7 +368,8 @@ public class NetworkMecchaManager :
 
         bool shouldShow =
             networkState.Phase ==
-                MultiplayerPhase.SeekerSearching ||
+                MultiplayerPhase
+                    .SeekerSearching ||
             networkState.Phase ==
                 MultiplayerPhase.Reveal ||
             networkState.Phase ==
@@ -350,6 +385,8 @@ public class NetworkMecchaManager :
         RefreshSeekerMecchas();
     }
 
+    // REFRESH SEEKER MECCHAS
+
     private void RefreshSeekerMecchas()
     {
         if (
@@ -362,6 +399,8 @@ public class NetworkMecchaManager :
 
         HashSet<int> activeIds =
             new HashSet<int>();
+
+        // PROCESS EVERY NETWORK MECCHA
 
         for (
             int i = 0;
@@ -385,6 +424,8 @@ public class NetworkMecchaManager :
             );
 
             GameObject meccha;
+
+            // CREATE SEEKER MECCHA IF NEEDED
 
             if (
                 !seekerMecchas
@@ -411,13 +452,16 @@ public class NetworkMecchaManager :
                     continue;
                 }
 
-                // Seeker Mecchas live directly
-                // inside the shared coordinate frame.
+                // CREATE DIRECTLY UNDER SHARED ORIGIN
+
                 meccha =
                     Instantiate(
                         prefab,
-                        originManager.SharedOrigin
+                        originManager
+                            .SharedOrigin
                     );
+
+                // SET INITIAL SHARED POSE
 
                 meccha.transform
                     .localPosition =
@@ -427,11 +471,12 @@ public class NetworkMecchaManager :
                     .localRotation =
                     data.LocalRotation;
 
-                NetworkMecchaIdentity
-                    identity =
-                        meccha.GetComponent<
-                            NetworkMecchaIdentity
-                        >();
+                // FIND / CREATE IDENTITY
+
+                NetworkMecchaIdentity identity =
+                    meccha.GetComponent<
+                        NetworkMecchaIdentity
+                    >();
 
                 if (identity == null)
                 {
@@ -441,15 +486,22 @@ public class NetworkMecchaManager :
                         >();
                 }
 
+                // IMPORTANT:
+                // Initialize the identity with the
+                // networked ID received from Photon.
                 identity.Initialize(
                     data.Id,
                     data.Type
                 );
 
+                // STORE SEEKER MECCHA
+
                 seekerMecchas[
                     data.Id
                 ] =
                     meccha;
+
+                // APPLY CACHED PAINT
 
                 if (
                     textureManager != null
@@ -463,7 +515,8 @@ public class NetworkMecchaManager :
                 }
 
                 Debug.Log(
-                    "[MecchaSync SEEKER] Spawned ID=" +
+                    "[MecchaSync SEEKER] " +
+                    "Spawned ID=" +
                     data.Id +
                     " | Shared=" +
                     data.LocalPosition +
@@ -472,8 +525,6 @@ public class NetworkMecchaManager :
                 );
             }
 
-            // Safety check in case an existing
-            // Meccha somehow lost its parent.
             if (
                 meccha.transform.parent !=
                 originManager.SharedOrigin
@@ -489,14 +540,19 @@ public class NetworkMecchaManager :
                 true
             );
 
-            // Photon values are already
-            // SharedOrigin-local coordinates.
+            // APPLY NETWORKED SHARED POSE
+
+            // Photon stores Meccha coordinates relative
+            // to SharedOrigin.
+
             meccha.transform.localPosition =
                 data.LocalPosition;
 
             meccha.transform.localRotation =
                 data.LocalRotation;
         }
+
+        // REMOVE LOCAL MECCHAS THAT ARE NO LONGER ACTIVE
 
         List<int> removeIds =
             new List<int>();
@@ -539,6 +595,8 @@ public class NetworkMecchaManager :
         }
     }
 
+    // GET SEEKER MECCHA
+
     public bool TryGetSeekerMeccha(
         int mecchaId,
         out GameObject meccha
@@ -551,6 +609,8 @@ public class NetworkMecchaManager :
             ) &&
             meccha != null;
     }
+
+    // HIDE ALL SEEKER MECCHAS
 
     private void HideAllSeekerMecchas()
     {
