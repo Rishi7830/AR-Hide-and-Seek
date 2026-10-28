@@ -416,6 +416,7 @@ MonoBehaviour:
   arCameraManager: {fileID: 254117154}
   handLandmarkerModel: {fileID: 4900000, guid: b467f87f6b5d4d200974b3ca14f53987, type: 3}
   visualizer: {fileID: 1713616073}
+  stereoVisualizer: {fileID: 0}
   numHands: 1
   minDetectionConfidence: 0.5
   minPresenceConfidence: 0.5
@@ -3470,6 +3471,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HunterGunShootController
   pickupController: {fileID: 325190818}
   shootButton: {fileID: 1611211796}
+  leftShootButton: {fileID: 0}
+  rightShootButton: {fileID: 0}
   ammoRemain: {fileID: 253033215}
   ammoFinishedPanel: {fileID: 1832955591}
   maximumAmmo: 6
@@ -3950,7 +3953,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HunterGunPickupController
   arCamera: {fileID: 331264289}
+  stereoLeftEyeCamera: {fileID: 0}
   handVisualizer: {fileID: 1713616073}
+  stereoHandVisualizer: {fileID: 0}
   gunHandAnchor: {fileID: 1541651696}
   rayDistance: 10
   pickupHoldTime: 4
@@ -4197,7 +4202,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HunterCrosshairController
   arCamera: {fileID: 331264289}
-  crosshair: {fileID: 1058633694}
+  stereoLeftEyeCamera: {fileID: 0}
+  stereoRightEyeCamera: {fileID: 0}
+  originalCrosshair: {fileID: 1058633694}
+  leftCrosshair: {fileID: 0}
+  rightCrosshair: {fileID: 0}
   pickupController: {fileID: 325190818}
   aimProjectionDistance: 1
   smoothTime: 0.03
@@ -14857,6 +14866,7 @@ MonoBehaviour:
   planeManager: {fileID: 151853166}
   mediaPipeHandManager: {fileID: 26609055}
   handTrackingCanvas: {fileID: 673310402}
+  stereoHandLandmark: {fileID: 0}
   stereoController: {fileID: 0}
   hunterGunManager: {fileID: 263564811}
   hunterGunHandController: {fileID: 2007437482}
@@ -16520,8 +16530,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HunterGunHandController
   arCamera: {fileID: 331264289}
+  stereoLeftEyeCamera: {fileID: 0}
   handVisualizer: {fileID: 1713616073}
-  pickupController: {fileID: 0}
+  stereoHandVisualizer: {fileID: 0}
+  pickupController: {fileID: 325190818}
   gunHandAnchor: {fileID: 1541651696}
   handDepth: 0.5
   gripOffset: {x: 0, y: -0.05, z: 0}
@@ -16529,6 +16541,11 @@ MonoBehaviour:
   depthSensitivity: 1
   minimumDepth: 0.25
   maximumDepth: 2
+  baseGunScale: 1
+  minimumGunScale: 0.65
+  maximumGunScale: 1.5
+  scaleSensitivity: 1
+  scaleSmoothSpeed: 12
   positionSmoothSpeed: 20
   automaticallyAlignMuzzle: 1
 --- !u!4 &2007437484
@@ -17896,7 +17913,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba822b2eb61eed044902caa519e44c75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HiderTimerController
-  totalTimeInSeconds: 120
+  totalTimeInSeconds: 40
   timerMode: 1
   networkGameState: {fileID: 296520741}
   timerText: {fileID: 481383805}

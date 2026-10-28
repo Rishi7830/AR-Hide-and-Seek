@@ -37,14 +37,23 @@ public class StereoViewController :
     private GameObject stereoDisplayCanvas;
 
     [Header("Stereo Settings")]
+    [Tooltip(
+        "Distance between the virtual left and right eye cameras."
+    )]
     [SerializeField]
     private float interpupillaryDistance =
         0.064f;
 
+    [Tooltip(
+        "Width of each eye RenderTexture."
+    )]
     [SerializeField]
     private int renderTextureWidth =
         1920;
 
+    [Tooltip(
+        "Height of each eye RenderTexture."
+    )]
     [SerializeField]
     private int renderTextureHeight =
         1080;
@@ -56,6 +65,15 @@ public class StereoViewController :
     [SerializeField]
     private string uiLayerName =
         "UI";
+
+    [Header("Stereo Projection")]
+    [Tooltip(
+        "Use the exact projection matrix supplied by " +
+        "the AR camera."
+    )]
+    [SerializeField]
+    private bool useARCameraProjection =
+        true;
 
     [Header("Debug")]
     [SerializeField]
@@ -133,10 +151,12 @@ public class StereoViewController :
         CreateRenderTextures();
 
         // --------------------------------------------------------
-        // CONFIGURE AR BACKGROUND DISPLAY
+        // CONFIGURE DISPLAY OBJECTS
         // --------------------------------------------------------
 
         ConfigureBackgroundDisplays();
+
+        ConfigureEyeDisplays();
 
         // --------------------------------------------------------
         // START IN NORMAL NON-STEREO MODE
@@ -146,7 +166,11 @@ public class StereoViewController :
 
         Debug.Log(
             "[Stereo] " +
-            "StereoViewController initialized."
+            "StereoViewController initialized. " +
+            "Eye RT = " +
+            renderTextureWidth +
+            "x" +
+            renderTextureHeight
         );
     }
 
@@ -161,9 +185,29 @@ public class StereoViewController :
         // --------------------------------------------------------
 
         if (
-            leftRenderTexture == null
+            leftRenderTexture == null ||
+            leftRenderTexture.width !=
+                renderTextureWidth ||
+            leftRenderTexture.height !=
+                renderTextureHeight
         )
         {
+            if (
+                leftRenderTexture != null
+            )
+            {
+                if (
+                    leftRenderTexture.IsCreated()
+                )
+                {
+                    leftRenderTexture.Release();
+                }
+
+                Destroy(
+                    leftRenderTexture
+                );
+            }
+
             leftRenderTexture =
                 new RenderTexture(
                     renderTextureWidth,
@@ -195,9 +239,29 @@ public class StereoViewController :
         // --------------------------------------------------------
 
         if (
-            rightRenderTexture == null
+            rightRenderTexture == null ||
+            rightRenderTexture.width !=
+                renderTextureWidth ||
+            rightRenderTexture.height !=
+                renderTextureHeight
         )
         {
+            if (
+                rightRenderTexture != null
+            )
+            {
+                if (
+                    rightRenderTexture.IsCreated()
+                )
+                {
+                    rightRenderTexture.Release();
+                }
+
+                Destroy(
+                    rightRenderTexture
+                );
+            }
+
             rightRenderTexture =
                 new RenderTexture(
                     renderTextureWidth,
@@ -269,7 +333,8 @@ public class StereoViewController :
         {
             Debug.LogWarning(
                 "[Stereo] " +
-                "AR Background RenderTexture is not assigned."
+                "AR Background RenderTexture " +
+                "is not assigned."
             );
 
             return;
@@ -280,14 +345,14 @@ public class StereoViewController :
         // --------------------------------------------------------
 
         if (
-            leftEyeBackgroundDisplay != null
+            leftEyeBackgroundDisplay !=
+            null
         )
         {
             leftEyeBackgroundDisplay.texture =
                 arBackgroundRenderTexture;
 
-            leftEyeBackgroundDisplay
-                .color =
+            leftEyeBackgroundDisplay.color =
                 Color.white;
 
             leftEyeBackgroundDisplay
@@ -304,14 +369,14 @@ public class StereoViewController :
         // --------------------------------------------------------
 
         if (
-            rightEyeBackgroundDisplay != null
+            rightEyeBackgroundDisplay !=
+            null
         )
         {
             rightEyeBackgroundDisplay.texture =
                 arBackgroundRenderTexture;
 
-            rightEyeBackgroundDisplay
-                .color =
+            rightEyeBackgroundDisplay.color =
                 Color.white;
 
             rightEyeBackgroundDisplay
@@ -364,6 +429,31 @@ public class StereoViewController :
     }
 
     // ============================================================
+    // CONFIGURE EYE DISPLAYS
+    // ============================================================
+
+    private void ConfigureEyeDisplays()
+    {
+        if (
+            leftEyeDisplay != null
+        )
+        {
+            ConfigureDisplay(
+                leftEyeDisplay
+            );
+        }
+
+        if (
+            rightEyeDisplay != null
+        )
+        {
+            ConfigureDisplay(
+                rightEyeDisplay
+            );
+        }
+    }
+
+    // ============================================================
     // CONFIGURE RAW IMAGE
     // ============================================================
 
@@ -383,6 +473,16 @@ public class StereoViewController :
 
         display.color =
             Color.white;
+
+        // --------------------------------------------------------
+        // KEEP THE RAW IMAGE'S EXISTING RECT TRANSFORM.
+        //
+        // We intentionally do NOT add or configure an
+        // AspectRatioFitter here.
+        //
+        // Your existing LeftEyeDisplay and RightEyeDisplay
+        // RectTransforms control the split-screen layout.
+        // --------------------------------------------------------
 
         if (
             flipVertical
@@ -421,7 +521,17 @@ public class StereoViewController :
             return;
         }
 
+        // --------------------------------------------------------
+        // KEEP EYES ALIGNED TO AR CAMERA
+        // --------------------------------------------------------
+
         UpdateEyeTransforms();
+
+        // --------------------------------------------------------
+        // KEEP AR PROJECTION SYNCHRONIZED
+        // --------------------------------------------------------
+
+        UpdateEyeProjection();
     }
 
     // ============================================================
@@ -452,7 +562,8 @@ public class StereoViewController :
         {
             Debug.LogError(
                 "[Stereo] " +
-                "AR Background RenderTexture is missing."
+                "AR Background RenderTexture " +
+                "is missing."
             );
 
             return;
@@ -462,22 +573,24 @@ public class StereoViewController :
             true;
 
         // --------------------------------------------------------
-        // MAKE SURE EYE TEXTURES EXIST
+        // MAKE SURE TEXTURES EXIST
         // --------------------------------------------------------
 
         CreateRenderTextures();
 
         ConfigureBackgroundDisplays();
 
+        ConfigureEyeDisplays();
+
         // --------------------------------------------------------
-        // MAIN CAMERA → AR BACKGROUND RENDER TEXTURE
+        // MAIN CAMERA → AR BACKGROUND TEXTURE
         // --------------------------------------------------------
 
         arCamera.targetTexture =
             arBackgroundRenderTexture;
 
         // --------------------------------------------------------
-        // CONFIGURE LEFT EYE
+        // LEFT EYE
         // --------------------------------------------------------
 
         ConfigureEyeCamera(
@@ -486,7 +599,7 @@ public class StereoViewController :
         );
 
         // --------------------------------------------------------
-        // CONFIGURE RIGHT EYE
+        // RIGHT EYE
         // --------------------------------------------------------
 
         ConfigureEyeCamera(
@@ -495,17 +608,16 @@ public class StereoViewController :
         );
 
         // --------------------------------------------------------
+        // IMMEDIATE UPDATE
+        // --------------------------------------------------------
+
+        UpdateEyeTransforms();
+
+        UpdateEyeProjection();
+
+        // --------------------------------------------------------
         // MAIN CAMERA CULLING MASK
         // --------------------------------------------------------
-        //
-        // Main Camera still renders the AR world/background,
-        // but we remove:
-        //
-        //     StereoAR
-        //     UI
-        //
-        // because those are handled by the stereo cameras.
-        //
 
         if (
             originalMainCameraMaskStored
@@ -531,7 +643,7 @@ public class StereoViewController :
         }
 
         // --------------------------------------------------------
-        // SHOW BACKGROUND DISPLAYS
+        // SHOW LEFT BACKGROUND
         // --------------------------------------------------------
 
         if (
@@ -541,8 +653,14 @@ public class StereoViewController :
         {
             leftEyeBackgroundDisplay
                 .gameObject
-                .SetActive(true);
+                .SetActive(
+                    true
+                );
         }
+
+        // --------------------------------------------------------
+        // SHOW RIGHT BACKGROUND
+        // --------------------------------------------------------
 
         if (
             rightEyeBackgroundDisplay !=
@@ -551,43 +669,48 @@ public class StereoViewController :
         {
             rightEyeBackgroundDisplay
                 .gameObject
-                .SetActive(true);
+                .SetActive(
+                    true
+                );
         }
 
         // --------------------------------------------------------
-        // SHOW EYE DISPLAYS
+        // SHOW LEFT EYE
         // --------------------------------------------------------
 
         if (
-            leftEyeDisplay !=
-            null
+            leftEyeDisplay != null
         )
         {
-            leftEyeDisplay
-                .gameObject
-                .SetActive(true);
+            leftEyeDisplay.gameObject
+                .SetActive(
+                    true
+                );
         }
+
+        // --------------------------------------------------------
+        // SHOW RIGHT EYE
+        // --------------------------------------------------------
 
         if (
-            rightEyeDisplay !=
-            null
+            rightEyeDisplay != null
         )
         {
-            rightEyeDisplay
-                .gameObject
-                .SetActive(true);
+            rightEyeDisplay.gameObject
+                .SetActive(
+                    true
+                );
         }
-
-        // --------------------------------------------------------
-        // UPDATE EYE POSITIONS
-        // --------------------------------------------------------
-
-        UpdateEyeTransforms();
 
         Debug.Log(
             "[Stereo] " +
-            "Stereo view ENABLED. " +
-            "AR background + left/right eye RenderTextures active."
+            "Stereo ENABLED. " +
+            "Eye RT=" +
+            renderTextureWidth +
+            "x" +
+            renderTextureHeight +
+            " | AR Projection=" +
+            useARCameraProjection
         );
     }
 
@@ -602,18 +725,16 @@ public class StereoViewController :
     {
         if (
             eyeCamera == null ||
-            targetTexture == null
+            targetTexture == null ||
+            arCamera == null
         )
         {
             return;
         }
 
         // --------------------------------------------------------
-        // COPY PROJECTION SETTINGS
+        // COPY CLIPPING / CAMERA MODE
         // --------------------------------------------------------
-
-        eyeCamera.fieldOfView =
-            arCamera.fieldOfView;
 
         eyeCamera.nearClipPlane =
             arCamera.nearClipPlane;
@@ -624,14 +745,23 @@ public class StereoViewController :
         eyeCamera.orthographic =
             arCamera.orthographic;
 
-        eyeCamera.orthographicSize =
-            arCamera.orthographicSize;
+        if (
+            arCamera.orthographic
+        )
+        {
+            eyeCamera.orthographicSize =
+                arCamera.orthographicSize;
+        }
 
         // --------------------------------------------------------
-        // RENDER:
+        // NO CUSTOM FOV
+        // NO CUSTOM ASPECT
         //
-        // StereoAR
-        // UI
+        // AR camera projection is applied separately.
+        // --------------------------------------------------------
+
+        // --------------------------------------------------------
+        // RENDER STEREO AR + UI
         // --------------------------------------------------------
 
         eyeCamera.cullingMask =
@@ -672,12 +802,69 @@ public class StereoViewController :
         eyeCamera.targetTexture =
             targetTexture;
 
-        // --------------------------------------------------------
-        // ENABLE
-        // --------------------------------------------------------
-
         eyeCamera.enabled =
             true;
+    }
+
+    // ============================================================
+    // UPDATE EYE PROJECTION
+    // ============================================================
+
+    private void UpdateEyeProjection()
+    {
+        if (
+            arCamera == null ||
+            leftEyeCamera == null ||
+            rightEyeCamera == null
+        )
+        {
+            return;
+        }
+
+        if (
+            useARCameraProjection
+        )
+        {
+            Matrix4x4 projection =
+                arCamera.projectionMatrix;
+
+            leftEyeCamera
+                .projectionMatrix =
+                projection;
+
+            rightEyeCamera
+                .projectionMatrix =
+                projection;
+
+            return;
+        }
+
+        // --------------------------------------------------------
+        // FALLBACK
+        // --------------------------------------------------------
+
+        leftEyeCamera.fieldOfView =
+            arCamera.fieldOfView;
+
+        rightEyeCamera.fieldOfView =
+            arCamera.fieldOfView;
+
+        leftEyeCamera.aspect =
+            arCamera.aspect;
+
+        rightEyeCamera.aspect =
+            arCamera.aspect;
+
+        if (
+            arCamera.orthographic
+        )
+        {
+            leftEyeCamera.orthographicSize =
+                arCamera.orthographicSize;
+
+            rightEyeCamera.orthographicSize =
+                arCamera.orthographicSize;
+        }
     }
 
     // ============================================================
@@ -690,7 +877,7 @@ public class StereoViewController :
             false;
 
         // --------------------------------------------------------
-        // DISABLE LEFT EYE
+        // LEFT EYE
         // --------------------------------------------------------
 
         if (
@@ -705,7 +892,7 @@ public class StereoViewController :
         }
 
         // --------------------------------------------------------
-        // DISABLE RIGHT EYE
+        // RIGHT EYE
         // --------------------------------------------------------
 
         if (
@@ -769,7 +956,9 @@ public class StereoViewController :
         {
             leftEyeBackgroundDisplay
                 .gameObject
-                .SetActive(false);
+                .SetActive(
+                    false
+                );
         }
 
         if (
@@ -779,7 +968,9 @@ public class StereoViewController :
         {
             rightEyeBackgroundDisplay
                 .gameObject
-                .SetActive(false);
+                .SetActive(
+                    false
+                );
         }
 
         // --------------------------------------------------------
@@ -790,9 +981,10 @@ public class StereoViewController :
             leftEyeDisplay != null
         )
         {
-            leftEyeDisplay
-                .gameObject
-                .SetActive(false);
+            leftEyeDisplay.gameObject
+                .SetActive(
+                    false
+                );
         }
 
         // --------------------------------------------------------
@@ -803,9 +995,10 @@ public class StereoViewController :
             rightEyeDisplay != null
         )
         {
-            rightEyeDisplay
-                .gameObject
-                .SetActive(false);
+            rightEyeDisplay.gameObject
+                .SetActive(
+                    false
+                );
         }
     }
 

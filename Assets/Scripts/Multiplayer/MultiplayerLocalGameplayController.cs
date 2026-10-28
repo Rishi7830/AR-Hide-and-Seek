@@ -4,14 +4,24 @@ using UnityEngine.XR.ARFoundation;
 public class MultiplayerLocalGameplayController :
     MonoBehaviour
 {
+    // ============================================================
+    // NETWORK
+    // ============================================================
+
     [Header("Network")]
+
     [SerializeField]
     private NetworkGameState networkState;
 
     [SerializeField]
     private MultiplayerRoleController roleController;
 
+    // ============================================================
+    // HIDER
+    // ============================================================
+
     [Header("Hider")]
+
     [SerializeField]
     private SpawnMeccha spawnMeccha;
 
@@ -24,40 +34,79 @@ public class MultiplayerLocalGameplayController :
         paintManager;
 
     [SerializeField]
-    private ARPlaneManager planeManager;
+    private ARPlaneManager
+        planeManager;
+
+    // ============================================================
+    // SEEKER HAND TRACKING
+    // ============================================================
 
     [Header("Seeker Hand Tracking")]
-    [SerializeField]
-    private GameObject mediaPipeHandManager;
 
+    [Tooltip(
+        "Main MediaPipe hand tracking manager."
+    )]
     [SerializeField]
-    private GameObject handTrackingCanvas;
+    private GameObject
+        mediaPipeHandManager;
+
+    [Tooltip(
+        "Original single-screen hand tracking canvas. " +
+        "Used by normal non-stereo gameplay."
+    )]
+    [SerializeField]
+    private GameObject
+        handTrackingCanvas;
+
+    [Tooltip(
+        "Stereo hand landmark visualizer GameObject. " +
+        "Contains StereoARHandLandmarkVisualizer."
+    )]
+    [SerializeField]
+    private GameObject
+        stereoHandLandmark;
 
     [SerializeField]
     private StereoViewController
-    stereoController;
+        stereoController;
+
+    // ============================================================
+    // SEEKER GUN SYSTEMS
+    // ============================================================
 
     [Header("Seeker Gun Systems")]
-    [SerializeField]
-    private GameObject hunterGunManager;
 
     [SerializeField]
-    private GameObject hunterGunHandController;
+    private GameObject
+        hunterGunManager;
 
     [SerializeField]
-    private GameObject hunterGunPickupController;
+    private GameObject
+        hunterGunHandController;
 
     [SerializeField]
-    private GameObject hunterGunOrientationController;
+    private GameObject
+        hunterGunPickupController;
 
     [SerializeField]
-    private GameObject hunterCrosshairController;
+    private GameObject
+        hunterGunOrientationController;
 
     [SerializeField]
-    private GameObject hunterGunShootController;
+    private GameObject
+        hunterCrosshairController;
 
     [SerializeField]
-    private GameObject hunterMecchaScoreController;
+    private GameObject
+        hunterGunShootController;
+
+    [SerializeField]
+    private GameObject
+        hunterMecchaScoreController;
+
+    // ============================================================
+    // STATE
+    // ============================================================
 
     private MultiplayerPhase previousPhase =
         (MultiplayerPhase)(-1);
@@ -65,22 +114,35 @@ public class MultiplayerLocalGameplayController :
     private MultiplayerRole previousRole =
         (MultiplayerRole)(-1);
 
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
-        // Hider systems start disabled.
-        if (spawnMeccha != null)
+        // --------------------------------------------------------
+        // HIDER SYSTEMS START DISABLED
+        // --------------------------------------------------------
+
+        if (
+            spawnMeccha != null
+        )
         {
             spawnMeccha.enabled =
                 false;
         }
 
-        if (fineTuneController != null)
+        if (
+            fineTuneController != null
+        )
         {
             fineTuneController.enabled =
                 false;
         }
 
-        if (paintManager != null)
+        if (
+            paintManager != null
+        )
         {
             paintManager.enabled =
                 false;
@@ -90,22 +152,27 @@ public class MultiplayerLocalGameplayController :
             false
         );
 
-        // Hand tracking starts disabled.
+        // --------------------------------------------------------
+        // HAND TRACKING STARTS DISABLED
+        // --------------------------------------------------------
+
         SetHandTrackingActive(
+            false,
             false
         );
 
-        // Gun rack spawning starts disabled.
+        // --------------------------------------------------------
+        // GUN SYSTEMS START DISABLED
+        // --------------------------------------------------------
+
         SetGunManagerActive(
             false
         );
 
-        // Gun hand-following starts disabled.
         SetGunFollowSystemsActive(
             false
         );
 
-        // Combat systems start disabled.
         SetGunCombatSystemsActive(
             false
         );
@@ -113,7 +180,22 @@ public class MultiplayerLocalGameplayController :
         SetMecchaScoreSystemActive(
             false
         );
+
+        // --------------------------------------------------------
+        // STEREO STARTS DISABLED
+        // --------------------------------------------------------
+
+        if (
+            stereoController != null
+        )
+        {
+            stereoController.DisableStereo();
+        }
     }
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
 
     private void Update()
     {
@@ -152,16 +234,28 @@ public class MultiplayerLocalGameplayController :
         );
     }
 
+    // ============================================================
+    // APPLY STATE
+    // ============================================================
+
     private void ApplyState(
         MultiplayerRole role,
         MultiplayerPhase phase
     )
     {
+        // --------------------------------------------------------
+        // HIDER GAMEPLAY
+        // --------------------------------------------------------
+
         bool hiderGameplay =
             role ==
                 MultiplayerRole.Hider &&
             phase ==
                 MultiplayerPhase.HiderHiding;
+
+        // --------------------------------------------------------
+        // SEEKER PHASES
+        // --------------------------------------------------------
 
         bool seekerSearching =
             role ==
@@ -181,55 +275,103 @@ public class MultiplayerLocalGameplayController :
             phase ==
                 MultiplayerPhase.Result;
 
-        // Keep hand tracking active through
-        // searching, reveal and result.
+        // --------------------------------------------------------
+        // SEEKER HAND TRACKING
+        // --------------------------------------------------------
+
         bool seekerHandTracking =
             seekerSearching ||
             seekerReveal ||
             seekerResult;
 
-        // Keep the held gun attached to the
-        // tracked hand through reveal/result.
+        // --------------------------------------------------------
+        // GUN FOLLOWING
+        // --------------------------------------------------------
+
         bool seekerGunFollowing =
             seekerSearching ||
             seekerReveal ||
             seekerResult;
 
-        // Shooting and crosshair are only
-        // available during active searching.
+        // --------------------------------------------------------
+        // COMBAT
+        // --------------------------------------------------------
+
         bool seekerCombat =
             seekerSearching;
 
-        // Score information can remain active
-        // throughout the Seeker end phases.
+        // --------------------------------------------------------
+        // SCORE
+        // --------------------------------------------------------
+
         bool seekerScore =
             seekerSearching ||
             seekerReveal ||
             seekerResult;
 
-        // Hider spawning.
-        if (spawnMeccha != null)
+        // ========================================================
+        // DETERMINE WHETHER THIS SCENE USES STEREO
+        // ========================================================
+        //
+        // IMPORTANT:
+        //
+        // We do NOT assume every Seeker is stereo.
+        //
+        // A Seeker is stereo only when this scene actually has
+        // a StereoViewController assigned.
+        //
+        // This allows your old non-stereo scene to continue using
+        // the original hand tracking.
+        // ========================================================
+
+        bool seekerStereo =
+            role ==
+                MultiplayerRole.Seeker &&
+            stereoController != null;
+
+        // ========================================================
+        // HIDER SPAWNING
+        // ========================================================
+
+        if (
+            spawnMeccha != null
+        )
         {
             spawnMeccha.enabled =
                 hiderGameplay;
         }
 
-        // Hider fine tuning.
-        if (fineTuneController != null)
+        // ========================================================
+        // HIDER FINE TUNING
+        // ========================================================
+
+        if (
+            fineTuneController != null
+        )
         {
             fineTuneController.enabled =
                 hiderGameplay;
         }
 
-        // AR planes only during Hider gameplay.
+        // ========================================================
+        // AR PLANES
+        // ========================================================
+
         SetPlaneSystemActive(
             hiderGameplay
         );
 
-        // Painting only during Hider gameplay.
-        if (paintManager != null)
+        // ========================================================
+        // PAINTING
+        // ========================================================
+
+        if (
+            paintManager != null
+        )
         {
-            if (hiderGameplay)
+            if (
+                hiderGameplay
+            )
             {
                 paintManager.enabled =
                     true;
@@ -244,45 +386,58 @@ public class MultiplayerLocalGameplayController :
             }
         }
 
-        // MediaPipe and hand visualization.
+        // ========================================================
+        // HAND TRACKING
+        // ========================================================
+
         SetHandTrackingActive(
-            seekerHandTracking
+            seekerHandTracking,
+            seekerStereo
         );
 
-        // Gun rack spawning only occurs
-        // during actual Seeker gameplay.
+        // ========================================================
+        // GUN RACK
+        // ========================================================
+
         SetGunManagerActive(
             seekerSearching
         );
 
-        // Keep the already-held gun attached
-        // to the hand during Reveal and Result.
+        // ========================================================
+        // GUN FOLLOWING
+        // ========================================================
+
         SetGunFollowSystemsActive(
             seekerGunFollowing
         );
 
-        // Disable shooting and crosshair
-        // once searching finishes.
+        // ========================================================
+        // COMBAT
+        // ========================================================
+
         SetGunCombatSystemsActive(
             seekerCombat
         );
+
+        // ========================================================
+        // SCORE
+        // ========================================================
 
         SetMecchaScoreSystemActive(
             seekerScore
         );
 
-        // Stereo is enabled for the entire Seeker experience,
-        // including AprilTag scanning, coordinate setup,
-        // waiting, searching, reveal and result.
-        bool seekerStereo =
-            role ==
-                MultiplayerRole.Seeker;
+        // ========================================================
+        // STEREO
+        // ========================================================
 
         if (
             stereoController != null
         )
         {
-            if (seekerStereo)
+            if (
+                seekerStereo
+            )
             {
                 stereoController.EnableStereo();
             }
@@ -292,15 +447,32 @@ public class MultiplayerLocalGameplayController :
             }
         }
 
+        // ========================================================
+        // DEBUG
+        // ========================================================
+
         Debug.Log(
-            "[MultiplayerLocal] Role=" +
+            "[MultiplayerLocal] " +
+            "Role=" +
             role +
             " | Phase=" +
             phase +
             " | HiderGameplay=" +
             hiderGameplay +
+            " | Stereo=" +
+            seekerStereo +
             " | HandTracking=" +
             seekerHandTracking +
+            " | OriginalHandCanvas=" +
+            (
+                handTrackingCanvas != null &&
+                handTrackingCanvas.activeSelf
+            ) +
+            " | StereoHand=" +
+            (
+                stereoHandLandmark != null &&
+                stereoHandLandmark.activeSelf
+            ) +
             " | GunFollowing=" +
             seekerGunFollowing +
             " | Combat=" +
@@ -308,30 +480,82 @@ public class MultiplayerLocalGameplayController :
         );
     }
 
+    // ============================================================
+    // HAND TRACKING
+    // ============================================================
+
     private void SetHandTrackingActive(
-        bool active
+        bool active,
+        bool stereoMode
     )
     {
-        if (mediaPipeHandManager != null)
+        // --------------------------------------------------------
+        // MEDIA PIPE DETECTOR
+        // --------------------------------------------------------
+
+        if (
+            mediaPipeHandManager != null
+        )
         {
             mediaPipeHandManager.SetActive(
                 active
             );
         }
 
-        if (handTrackingCanvas != null)
+        // --------------------------------------------------------
+        // ORIGINAL HAND TRACKING CANVAS
+        // --------------------------------------------------------
+        //
+        // Normal Seeker:
+        //     ON
+        //
+        // Stereo Seeker:
+        //     OFF
+        // --------------------------------------------------------
+
+        if (
+            handTrackingCanvas != null
+        )
         {
             handTrackingCanvas.SetActive(
-                active
+                active &&
+                !stereoMode
+            );
+        }
+
+        // --------------------------------------------------------
+        // STEREO HAND VISUALIZER
+        // --------------------------------------------------------
+        //
+        // Normal Seeker:
+        //     OFF
+        //
+        // Stereo Seeker:
+        //     ON
+        // --------------------------------------------------------
+
+        if (
+            stereoHandLandmark != null
+        )
+        {
+            stereoHandLandmark.SetActive(
+                active &&
+                stereoMode
             );
         }
     }
+
+    // ============================================================
+    // GUN MANAGER
+    // ============================================================
 
     private void SetGunManagerActive(
         bool active
     )
     {
-        if (hunterGunManager != null)
+        if (
+            hunterGunManager != null
+        )
         {
             hunterGunManager.SetActive(
                 active
@@ -339,18 +563,26 @@ public class MultiplayerLocalGameplayController :
         }
     }
 
+    // ============================================================
+    // GUN FOLLOW SYSTEMS
+    // ============================================================
+
     private void SetGunFollowSystemsActive(
         bool active
     )
     {
-        if (hunterGunHandController != null)
+        if (
+            hunterGunHandController != null
+        )
         {
             hunterGunHandController.SetActive(
                 active
             );
         }
 
-        if (hunterGunPickupController != null)
+        if (
+            hunterGunPickupController != null
+        )
         {
             hunterGunPickupController.SetActive(
                 active
@@ -369,11 +601,18 @@ public class MultiplayerLocalGameplayController :
         }
     }
 
+    // ============================================================
+    // GUN COMBAT SYSTEMS
+    // ============================================================
+
     private void SetGunCombatSystemsActive(
         bool active
     )
     {
-        if (hunterCrosshairController != null)
+        if (
+            hunterCrosshairController !=
+            null
+        )
         {
             hunterCrosshairController
                 .SetActive(
@@ -381,7 +620,10 @@ public class MultiplayerLocalGameplayController :
                 );
         }
 
-        if (hunterGunShootController != null)
+        if (
+            hunterGunShootController !=
+            null
+        )
         {
             hunterGunShootController
                 .SetActive(
@@ -389,6 +631,10 @@ public class MultiplayerLocalGameplayController :
                 );
         }
     }
+
+    // ============================================================
+    // MECCHA SCORE
+    // ============================================================
 
     private void SetMecchaScoreSystemActive(
         bool active
@@ -406,11 +652,17 @@ public class MultiplayerLocalGameplayController :
         }
     }
 
+    // ============================================================
+    // AR PLANE SYSTEM
+    // ============================================================
+
     private void SetPlaneSystemActive(
         bool active
     )
     {
-        if (planeManager == null)
+        if (
+            planeManager == null
+        )
         {
             return;
         }
@@ -423,7 +675,9 @@ public class MultiplayerLocalGameplayController :
             in planeManager.trackables
         )
         {
-            if (plane != null)
+            if (
+                plane != null
+            )
             {
                 plane.gameObject.SetActive(
                     active

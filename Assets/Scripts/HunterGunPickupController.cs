@@ -1,22 +1,67 @@
 using UnityEngine;
 
-public class HunterGunPickupController : MonoBehaviour
+public class HunterGunPickupController :
+    MonoBehaviour
 {
+    // ============================================================
+    // CAMERA
+    // ============================================================
+
     [Header("Camera")]
+
     [SerializeField]
     private Camera arCamera;
 
-    [Header("Hand")]
+    [Tooltip(
+        "Left eye camera used for stereo gun pickup."
+    )]
     [SerializeField]
-    private ARHandLandmarkVisualizer handVisualizer;
+    private Camera stereoLeftEyeCamera;
+
+    // ============================================================
+    // HAND VISUALIZATION
+    // ============================================================
+
+    [Header("Hand Visualization")]
+
+    [Tooltip(
+        "Original single-screen hand landmark visualizer. " +
+        "Keep this assigned for normal mode."
+    )]
+    [SerializeField]
+    private ARHandLandmarkVisualizer
+        handVisualizer;
+
+    [Tooltip(
+        "Stereo hand landmark visualizer. " +
+        "Used automatically when active."
+    )]
+    [SerializeField]
+    private StereoARHandLandmarkVisualizer
+        stereoHandVisualizer;
+
+    // ============================================================
+    // GUN HAND ANCHOR
+    // ============================================================
 
     [Header("Gun Hand Anchor")]
+
     [SerializeField]
     private Transform gunHandAnchor;
 
+    // ============================================================
+    // RAYCAST
+    // ============================================================
+
     [Header("Raycast")]
+
     [SerializeField]
-    private float rayDistance = 10f;
+    private float rayDistance =
+        10f;
+
+    // ============================================================
+    // PICKUP SETTINGS
+    // ============================================================
 
     [Header("Pickup Settings")]
 
@@ -25,92 +70,204 @@ public class HunterGunPickupController : MonoBehaviour
         "before it is picked up."
     )]
     [SerializeField]
-    private float pickupHoldTime = 0.5f;
+    private float pickupHoldTime =
+        0.5f;
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
 
     [Header("Debug")]
+
     [SerializeField]
-    private bool logPickup = true;
+    private bool logPickup =
+        true;
 
-    private HunterGunPickup heldGun;
-    private HunterGunPickup hoveredGun;
-    private float pickupTimer = 0f;
+    // ============================================================
+    // INTERNAL STATE
+    // ============================================================
 
+    private HunterGunPickup
+        heldGun;
+
+    private HunterGunPickup
+        hoveredGun;
+
+    private float
+        pickupTimer =
+        0f;
+
+    // ============================================================
+    // START
+    // ============================================================
 
     private void Start()
     {
-        if (arCamera == null)
+        // --------------------------------------------------------
+        // MAIN AR CAMERA
+        // --------------------------------------------------------
+
+        if (
+            arCamera == null
+        )
         {
-            arCamera = Camera.main;
+            arCamera =
+                Camera.main;
         }
 
-        if (handVisualizer == null)
+        // --------------------------------------------------------
+        // ORIGINAL HAND VISUALIZER
+        // --------------------------------------------------------
+
+        if (
+            handVisualizer == null
+        )
         {
             handVisualizer =
                 FindFirstObjectByType<
-                    ARHandLandmarkVisualizer>();
+                    ARHandLandmarkVisualizer
+                >();
         }
+
+        // --------------------------------------------------------
+        // STEREO HAND VISUALIZER
+        // --------------------------------------------------------
+
+        if (
+            stereoHandVisualizer == null
+        )
+        {
+            stereoHandVisualizer =
+                FindFirstObjectByType<
+                    StereoARHandLandmarkVisualizer
+                >();
+        }
+
+        // --------------------------------------------------------
+        // STEREO LEFT EYE CAMERA
+        // --------------------------------------------------------
+
+        if (
+            stereoLeftEyeCamera == null
+        )
+        {
+            GameObject leftEyeObject =
+                GameObject.Find(
+                    "LeftEyeCamera"
+                );
+
+            if (
+                leftEyeObject != null
+            )
+            {
+                stereoLeftEyeCamera =
+                    leftEyeObject
+                        .GetComponent<Camera>();
+            }
+        }
+
+        Debug.Log(
+            "[HunterPickup] " +
+            "Initialized. " +
+            "OriginalHand=" +
+            (
+                handVisualizer != null
+            ) +
+            " | StereoHand=" +
+            (
+                stereoHandVisualizer != null
+            ) +
+            " | StereoLeftEye=" +
+            (
+                stereoLeftEyeCamera != null
+            )
+        );
     }
 
+    // ============================================================
     // UPDATE
+    // ============================================================
 
     private void Update()
     {
         if (
-            arCamera == null ||
-            handVisualizer == null ||
             gunHandAnchor == null
         )
         {
             return;
         }
 
+        // --------------------------------------------------------
         // ALREADY HOLDING A GUN
+        // --------------------------------------------------------
 
-        if (heldGun != null)
+        if (
+            heldGun != null
+        )
         {
             return;
         }
 
+        // --------------------------------------------------------
         // FIND GUN UNDER INDEX FINGER
+        // --------------------------------------------------------
 
         HunterGunPickup currentTarget =
             FindGunUnderIndexFinger();
 
+        // --------------------------------------------------------
         // NO GUN TARGETED
+        // --------------------------------------------------------
 
-        if (currentTarget == null)
+        if (
+            currentTarget == null
+        )
         {
-            hoveredGun = null;
+            hoveredGun =
+                null;
 
-            pickupTimer = 0f;
+            pickupTimer =
+                0f;
 
             return;
         }
 
+        // --------------------------------------------------------
         // NEW GUN TARGETED
+        // --------------------------------------------------------
 
-        if (hoveredGun != currentTarget)
+        if (
+            hoveredGun != currentTarget
+        )
         {
             hoveredGun =
                 currentTarget;
 
-            pickupTimer = 0f;
+            pickupTimer =
+                0f;
 
-            if (logPickup)
+            if (
+                logPickup
+            )
             {
                 Debug.Log(
-                    "[Hunter] Pointing at gun: " +
+                    "[Hunter] " +
+                    "Pointing at gun: " +
                     hoveredGun.name
                 );
             }
         }
 
+        // --------------------------------------------------------
         // HOLD-TO-PICKUP TIMER
+        // --------------------------------------------------------
 
         pickupTimer +=
             Time.deltaTime;
 
+        // --------------------------------------------------------
         // PICKUP AFTER HOLD TIME
+        // --------------------------------------------------------
 
         if (
             pickupTimer >=
@@ -123,37 +280,192 @@ public class HunterGunPickupController : MonoBehaviour
         }
     }
 
+    // ============================================================
     // FIND GUN UNDER INDEX FINGER
+    // ============================================================
 
     private HunterGunPickup
         FindGunUnderIndexFinger()
     {
+        bool stereoActive =
+            stereoHandVisualizer != null &&
+            stereoHandVisualizer
+                .isActiveAndEnabled;
+
+        // ========================================================
+        // STEREO MODE
+        // ========================================================
+
+        if (
+            stereoActive
+        )
+        {
+            return FindGunUnderIndexFingerStereo();
+        }
+
+        // ========================================================
+        // NORMAL MODE
+        // ========================================================
+
+        return FindGunUnderIndexFingerNormal();
+    }
+
+    // ============================================================
+    // NORMAL PICKUP
+    // ============================================================
+
+    private HunterGunPickup
+        FindGunUnderIndexFingerNormal()
+    {
+        if (
+            arCamera == null ||
+            handVisualizer == null
+        )
+        {
+            return null;
+        }
+
+        // --------------------------------------------------------
         // LANDMARK 8 = INDEX FINGERTIP
+        // --------------------------------------------------------
 
         Vector2 fingertip =
             handVisualizer
-                .GetLandmarkUIPosition(8);
+                .GetLandmarkUIPosition(
+                    8
+                );
 
-        // CONVERT UI POSITION TO SCREEN POSITION
+        // --------------------------------------------------------
+        // ORIGINAL FULL-SCREEN COORDINATE SYSTEM
+        // --------------------------------------------------------
 
         Vector2 screenPosition =
             new Vector2(
                 fingertip.x +
-                Screen.width * 0.5f,
+                Screen.width *
+                0.5f,
 
                 fingertip.y +
-                Screen.height * 0.5f
+                Screen.height *
+                0.5f
             );
 
-        // CREATE CAMERA RAY
+        screenPosition =
+            ClampScreenPosition(
+                screenPosition,
+                Screen.width,
+                Screen.height
+            );
+
+        // --------------------------------------------------------
+        // MAIN CAMERA RAY
+        // --------------------------------------------------------
 
         Ray ray =
             arCamera.ScreenPointToRay(
                 screenPosition
             );
 
-        // RAYCAST
+        return RaycastForGun(
+            ray
+        );
+    }
 
+    // ============================================================
+    // STEREO PICKUP
+    // ============================================================
+
+    private HunterGunPickup
+        FindGunUnderIndexFingerStereo()
+    {
+        if (
+            stereoHandVisualizer == null ||
+            stereoLeftEyeCamera == null
+        )
+        {
+            return null;
+        }
+
+        // --------------------------------------------------------
+        // LANDMARK 8 = INDEX FINGERTIP
+        // --------------------------------------------------------
+
+        Vector2 leftEyeLandmark =
+            stereoHandVisualizer
+                .GetLandmarkUIPosition(
+                    8
+                );
+
+        // --------------------------------------------------------
+        // LEFT CANVAS / LEFT EYE
+        //
+        // Your SeekerLeftCanvas is:
+        //
+        // Screen Space - Camera
+        // Render Camera = LeftEyeCamera
+        // Reference Resolution = 1920 x 1080
+        //
+        // Therefore the StereoHand landmark is converted directly
+        // from its centered UI coordinate into the left eye's
+        // 1920 x 1080 screen coordinates.
+        // --------------------------------------------------------
+
+        float eyeWidth =
+            stereoLeftEyeCamera.pixelWidth;
+
+        float eyeHeight =
+            stereoLeftEyeCamera.pixelHeight;
+
+        if (
+            eyeWidth <= 0f ||
+            eyeHeight <= 0f
+        )
+        {
+            return null;
+        }
+
+        Vector2 eyeScreenPosition =
+            new Vector2(
+                leftEyeLandmark.x +
+                eyeWidth *
+                0.5f,
+
+                leftEyeLandmark.y +
+                eyeHeight *
+                0.5f
+            );
+
+        eyeScreenPosition =
+            ClampScreenPosition(
+                eyeScreenPosition,
+                eyeWidth,
+                eyeHeight
+            );
+
+        // --------------------------------------------------------
+        // LEFT EYE CAMERA RAY
+        // --------------------------------------------------------
+
+        Ray ray =
+            stereoLeftEyeCamera
+                .ScreenPointToRay(
+                    eyeScreenPosition
+                );
+
+        return RaycastForGun(
+            ray
+        );
+    }
+
+    // ============================================================
+    // RAYCAST FOR GUN
+    // ============================================================
+
+    private HunterGunPickup
+        RaycastForGun(
+            Ray ray
+        )
+    {
         if (
             Physics.Raycast(
                 ray,
@@ -165,21 +477,57 @@ public class HunterGunPickupController : MonoBehaviour
             HunterGunPickup gun =
                 hit.collider
                     .GetComponentInParent<
-                        HunterGunPickup>();
+                        HunterGunPickup
+                    >();
 
-            return gun;
+            if (
+                gun != null
+            )
+            {
+                return gun;
+            }
         }
 
         return null;
     }
 
+    // ============================================================
+    // CLAMP SCREEN POSITION
+    // ============================================================
+
+    private Vector2
+        ClampScreenPosition(
+            Vector2 position,
+            float width,
+            float height
+        )
+    {
+        return new Vector2(
+            Mathf.Clamp(
+                position.x,
+                0f,
+                width
+            ),
+
+            Mathf.Clamp(
+                position.y,
+                0f,
+                height
+            )
+        );
+    }
+
+    // ============================================================
     // PICKUP
+    // ============================================================
 
     private void PickupGun(
         HunterGunPickup gun
     )
     {
-        if (gun == null)
+        if (
+            gun == null
+        )
         {
             return;
         }
@@ -194,32 +542,44 @@ public class HunterGunPickupController : MonoBehaviour
             gunHandAnchor
         );
 
-        if (logPickup)
+        if (
+            logPickup
+        )
         {
             Debug.Log(
-                "[Hunter] Gun picked up: " +
+                "[Hunter] " +
+                "Gun picked up: " +
                 gun.name
             );
         }
     }
 
+    // ============================================================
     // GET HELD GUN
+    // ============================================================
 
-    public HunterGunPickup GetHeldGun()
+    public HunterGunPickup
+        GetHeldGun()
     {
         return heldGun;
     }
 
+    // ============================================================
     // GET HOVERED GUN
+    // ============================================================
 
-    public HunterGunPickup GetHoveredGun()
+    public HunterGunPickup
+        GetHoveredGun()
     {
         return hoveredGun;
     }
 
+    // ============================================================
     // GET PICKUP PROGRESS
+    // ============================================================
 
-    public float GetPickupProgress()
+    public float
+        GetPickupProgress()
     {
         if (
             hoveredGun == null ||
@@ -235,27 +595,39 @@ public class HunterGunPickupController : MonoBehaviour
         );
     }
 
+    // ============================================================
     // DROP GUN
+    // ============================================================
 
     public void DropHeldGun()
     {
-        if (heldGun == null)
+        if (
+            heldGun == null
+        )
         {
             return;
         }
 
         heldGun.Drop();
 
-        if (logPickup)
+        if (
+            logPickup
+        )
         {
             Debug.Log(
-                "[Hunter] Gun dropped: " +
+                "[Hunter] " +
+                "Gun dropped: " +
                 heldGun.name
             );
         }
 
-        heldGun = null;
-        hoveredGun = null;
-        pickupTimer = 0f;
+        heldGun =
+            null;
+
+        hoveredGun =
+            null;
+
+        pickupTimer =
+            0f;
     }
 }
