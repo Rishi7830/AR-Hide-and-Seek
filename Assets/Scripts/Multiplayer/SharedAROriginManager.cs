@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -6,29 +6,54 @@ using UnityEngine.XR.ARSubsystems;
 public class SharedAROriginManager :
     MonoBehaviour
 {
+    // ============================================================
+    // AR
+    // ============================================================
+
     [Header("AR")]
-    [SerializeField]
-    private ARTrackedImageManager trackedImageManager;
 
     [SerializeField]
-    private ARAnchorManager anchorManager;
+    private ARTrackedImageManager
+        trackedImageManager;
+
+    [SerializeField]
+    private ARAnchorManager
+        anchorManager;
+
+    // ============================================================
+    // NETWORK
+    // ============================================================
 
     [Header("Network")]
-    [SerializeField]
-    private NetworkGameState networkState;
 
     [SerializeField]
-    private MultiplayerRoleController roleController;
+    private NetworkGameState
+        networkState;
 
     [SerializeField]
-    private NetworkMecchaManager networkMecchaManager;
+    private MultiplayerRoleController
+        roleController;
+
+    [SerializeField]
+    private NetworkMecchaManager
+        networkMecchaManager;
+
+    // ============================================================
+    // REFERENCE IMAGE
+    // ============================================================
 
     [Header("Reference Image")]
+
     [SerializeField]
     private string originImageName =
         "InitialAprilTag";
 
+    // ============================================================
+    // CALIBRATION
+    // ============================================================
+
     [Header("Calibration")]
+
     [SerializeField]
     private float calibrationTime =
         1.0f;
@@ -56,63 +81,148 @@ public class SharedAROriginManager :
     private bool forceHorizontalOrigin =
         true;
 
-    [Header("UI")]
+    // ============================================================
+    // ORIGINAL / NON-STEREO UI
+    // ============================================================
+
+    [Header("UI - Original / Non-Stereo")]
+
+    [Tooltip(
+        "Original single-screen coordinate-set panel. " +
+        "Used when stereo panel references are not assigned."
+    )]
     [SerializeField]
-    private GameObject coordinateSetPanel;
+    private GameObject
+        coordinateSetPanel;
 
     [SerializeField]
     private float panelDuration =
         10f;
 
+    [Tooltip(
+        "Original single-screen coordinate-updated panel. " +
+        "Used when stereo panel references are not assigned."
+    )]
     [SerializeField]
-    private GameObject coordinateUpdatedPanel;
+    private GameObject
+        coordinateUpdatedPanel;
 
     [SerializeField]
     private float updatedPanelDuration =
         2f;
 
-    [Header("Debug")]
+    // ============================================================
+    // STEREO UI
+    // ============================================================
+
+    [Header("UI - Stereo Seeker")]
+
+    [Tooltip(
+        "Left-eye coordinate-set panel. " +
+        "Assign this in the stereo Seeker scene."
+    )]
     [SerializeField]
-    private GameObject originDebugPrefab;
+    private GameObject
+        leftCoordinateSetPanel;
 
-    private GameObject originObject;
+    [Tooltip(
+        "Right-eye coordinate-set panel. " +
+        "Assign this in the stereo Seeker scene."
+    )]
+    [SerializeField]
+    private GameObject
+        rightCoordinateSetPanel;
 
-    private GameObject originDebugObject;
+    [Tooltip(
+        "Left-eye coordinate-updated panel. " +
+        "Assign this in the stereo Seeker scene."
+    )]
+    [SerializeField]
+    private GameObject
+        leftCoordinateUpdatedPanel;
 
-    private ARAnchor sharedAnchor;
+    [Tooltip(
+        "Right-eye coordinate-updated panel. " +
+        "Assign this in the stereo Seeker scene."
+    )]
+    [SerializeField]
+    private GameObject
+        rightCoordinateUpdatedPanel;
 
-    private ARTrackedImage calibrationImage;
+    // ============================================================
+    // DEBUG
+    // ============================================================
 
-    private Coroutine rearmRescanCoroutine;
+    [Header("Debug")]
 
-    private Coroutine updatedPanelCoroutine;
+    [SerializeField]
+    private GameObject
+        originDebugPrefab;
 
-    private bool isCalibrating =
+    // ============================================================
+    // INTERNAL STATE
+    // ============================================================
+
+    private GameObject
+        originObject;
+
+    private GameObject
+        originDebugObject;
+
+    private ARAnchor
+        sharedAnchor;
+
+    private ARTrackedImage
+        calibrationImage;
+
+    private Coroutine
+        rearmRescanCoroutine;
+
+    private Coroutine
+        updatedPanelCoroutine;
+
+    private Coroutine
+        coordinateSetPanelCoroutine;
+
+    private bool
+        isCalibrating =
         false;
 
-    private bool originLocked =
+    private bool
+        originLocked =
         false;
 
-    private bool originImageCurrentlyTracking =
+    private bool
+        originImageCurrentlyTracking =
         false;
 
-    private bool readyForRescan =
+    private bool
+        readyForRescan =
         true;
 
-    private bool originReadyReported =
+    private bool
+        originReadyReported =
         false;
 
-    private Vector3 positionSum =
+    private Vector3
+        positionSum =
         Vector3.zero;
 
-    private Quaternion averagedRotation =
+    private Quaternion
+        averagedRotation =
         Quaternion.identity;
 
-    private int sampleCount =
+    private int
+        sampleCount =
         0;
 
-    private float lastCalibrationTime =
+    private float
+        lastCalibrationTime =
         -1000f;
+
+    // ============================================================
+    // SHARED ORIGIN
+    // ============================================================
 
     public Transform SharedOrigin
     {
@@ -130,9 +240,28 @@ public class SharedAROriginManager :
         }
     }
 
+    // ============================================================
+    // STEREO UI MODE
+    // ============================================================
+
+    private bool UsesStereoPanels()
+    {
+        return
+            leftCoordinateSetPanel != null &&
+            rightCoordinateSetPanel != null &&
+            leftCoordinateUpdatedPanel != null &&
+            rightCoordinateUpdatedPanel != null;
+    }
+
+    // ============================================================
+    // ENABLE
+    // ============================================================
+
     private void OnEnable()
     {
-        if (trackedImageManager != null)
+        if (
+            trackedImageManager != null
+        )
         {
             trackedImageManager
                 .trackablesChanged
@@ -142,9 +271,15 @@ public class SharedAROriginManager :
         }
     }
 
+    // ============================================================
+    // DISABLE
+    // ============================================================
+
     private void OnDisable()
     {
-        if (trackedImageManager != null)
+        if (
+            trackedImageManager != null
+        )
         {
             trackedImageManager
                 .trackablesChanged
@@ -153,7 +288,9 @@ public class SharedAROriginManager :
                 );
         }
 
-        if (rearmRescanCoroutine != null)
+        if (
+            rearmRescanCoroutine != null
+        )
         {
             StopCoroutine(
                 rearmRescanCoroutine
@@ -163,7 +300,9 @@ public class SharedAROriginManager :
                 null;
         }
 
-        if (updatedPanelCoroutine != null)
+        if (
+            updatedPanelCoroutine != null
+        )
         {
             StopCoroutine(
                 updatedPanelCoroutine
@@ -172,7 +311,23 @@ public class SharedAROriginManager :
             updatedPanelCoroutine =
                 null;
         }
+
+        if (
+            coordinateSetPanelCoroutine != null
+        )
+        {
+            StopCoroutine(
+                coordinateSetPanelCoroutine
+            );
+
+            coordinateSetPanelCoroutine =
+                null;
+        }
     }
+
+    // ============================================================
+    // TRACKABLES CHANGED
+    // ============================================================
 
     private void OnTrackablesChanged(
         ARTrackablesChangedEventArgs<
@@ -201,11 +356,17 @@ public class SharedAROriginManager :
         }
     }
 
+    // ============================================================
+    // PROCESS ORIGIN IMAGE
+    // ============================================================
+
     private void ProcessOriginImage(
         ARTrackedImage trackedImage
     )
     {
-        if (trackedImage == null)
+        if (
+            trackedImage == null
+        )
         {
             return;
         }
@@ -222,7 +383,9 @@ public class SharedAROriginManager :
             trackedImage.trackingState ==
             TrackingState.Tracking;
 
-        if (!isTracking)
+        if (
+            !isTracking
+        )
         {
             HandleOriginImageLost();
 
@@ -235,10 +398,13 @@ public class SharedAROriginManager :
         originImageCurrentlyTracking =
             true;
 
-        // If the tag returned before the lost
-        // timer finished, do not treat it as
-        // a completely new scan.
-        if (rearmRescanCoroutine != null)
+        // --------------------------------------------------------
+        // TAG RETURNED BEFORE LOSS TIMER FINISHED
+        // --------------------------------------------------------
+
+        if (
+            rearmRescanCoroutine != null
+        )
         {
             StopCoroutine(
                 rearmRescanCoroutine
@@ -248,13 +414,24 @@ public class SharedAROriginManager :
                 null;
         }
 
-        if (isCalibrating)
+        // --------------------------------------------------------
+        // ALREADY CALIBRATING
+        // --------------------------------------------------------
+
+        if (
+            isCalibrating
+        )
         {
             return;
         }
 
-        // First ever scan.
-        if (!HasOrigin)
+        // --------------------------------------------------------
+        // FIRST EVER SCAN
+        // --------------------------------------------------------
+
+        if (
+            !HasOrigin
+        )
         {
             TryStartCalibration(
                 trackedImage,
@@ -264,17 +441,31 @@ public class SharedAROriginManager :
             return;
         }
 
-        // Do not continuously recalibrate
-        // while looking at the same marker.
-        if (wasAlreadyTracking)
+        // --------------------------------------------------------
+        // SAME TRACKING SESSION
+        // --------------------------------------------------------
+
+        if (
+            wasAlreadyTracking
+        )
         {
             return;
         }
 
-        if (!readyForRescan)
+        // --------------------------------------------------------
+        // WAITING FOR RESCAN
+        // --------------------------------------------------------
+
+        if (
+            !readyForRescan
+        )
         {
             return;
         }
+
+        // --------------------------------------------------------
+        // COOLDOWN
+        // --------------------------------------------------------
 
         if (
             Time.time -
@@ -285,22 +476,36 @@ public class SharedAROriginManager :
             return;
         }
 
-        if (!CanRescanOrigin())
+        // --------------------------------------------------------
+        // RESCAN CHECK
+        // --------------------------------------------------------
+
+        if (
+            !CanRescanOrigin()
+        )
         {
             return;
         }
 
-        // The marker was previously lost
-        // and has now been found again.
+        // --------------------------------------------------------
+        // MARKER FOUND AGAIN
+        // --------------------------------------------------------
+
         TryStartCalibration(
             trackedImage,
             true
         );
     }
 
+    // ============================================================
+    // ORIGIN IMAGE LOST
+    // ============================================================
+
     private void HandleOriginImageLost()
     {
-        if (!originImageCurrentlyTracking)
+        if (
+            !originImageCurrentlyTracking
+        )
         {
             return;
         }
@@ -308,12 +513,16 @@ public class SharedAROriginManager :
         originImageCurrentlyTracking =
             false;
 
-        if (!HasOrigin)
+        if (
+            !HasOrigin
+        )
         {
             return;
         }
 
-        if (rearmRescanCoroutine != null)
+        if (
+            rearmRescanCoroutine != null
+        )
         {
             StopCoroutine(
                 rearmRescanCoroutine
@@ -325,6 +534,10 @@ public class SharedAROriginManager :
                 RearmRescanAfterLoss()
             );
     }
+
+    // ============================================================
+    // REARM RESCAN
+    // ============================================================
 
     private IEnumerator
         RearmRescanAfterLoss()
@@ -345,7 +558,9 @@ public class SharedAROriginManager :
             yield break;
         }
 
-        if (!CanRescanOrigin())
+        if (
+            !CanRescanOrigin()
+        )
         {
             yield break;
         }
@@ -359,12 +574,18 @@ public class SharedAROriginManager :
         );
     }
 
+    // ============================================================
+    // START CALIBRATION
+    // ============================================================
+
     private void TryStartCalibration(
         ARTrackedImage trackedImage,
         bool isRescan
     )
     {
-        if (isCalibrating)
+        if (
+            isCalibrating
+        )
         {
             return;
         }
@@ -395,9 +616,13 @@ public class SharedAROriginManager :
             return;
         }
 
-        if (isRescan)
+        if (
+            isRescan
+        )
         {
-            if (!CanRescanOrigin())
+            if (
+                !CanRescanOrigin()
+            )
             {
                 return;
             }
@@ -425,6 +650,10 @@ public class SharedAROriginManager :
             )
         );
     }
+
+    // ============================================================
+    // CALIBRATE AND LOCK
+    // ============================================================
 
     private IEnumerator
         CalibrateAndLock(
@@ -454,15 +683,18 @@ public class SharedAROriginManager :
             calibrationTime
         )
         {
-            // If Seeker gameplay begins during
-            // a rescan, cancel the recalibration.
+            // ----------------------------------------------------
+            // CANCEL RESCAN IF GAMEPLAY HAS STARTED
+            // ----------------------------------------------------
+
             if (
                 isRescan &&
                 !CanRescanOrigin()
             )
             {
                 Debug.Log(
-                    "[SharedOrigin] Recalibration cancelled."
+                    "[SharedOrigin] " +
+                    "Recalibration cancelled."
                 );
 
                 isCalibrating =
@@ -473,6 +705,10 @@ public class SharedAROriginManager :
 
                 yield break;
             }
+
+            // ----------------------------------------------------
+            // SAMPLE TRACKED IMAGE
+            // ----------------------------------------------------
 
             if (
                 calibrationImage != null &&
@@ -491,7 +727,9 @@ public class SharedAROriginManager :
                 positionSum +=
                     currentPosition;
 
-                if (!rotationInitialized)
+                if (
+                    !rotationInitialized
+                )
                 {
                     averagedRotation =
                         currentRotation;
@@ -503,7 +741,10 @@ public class SharedAROriginManager :
                 {
                     float blend =
                         1f /
-                        (sampleCount + 1f);
+                        (
+                            sampleCount +
+                            1f
+                        );
 
                     averagedRotation =
                         Quaternion.Slerp(
@@ -522,6 +763,10 @@ public class SharedAROriginManager :
             yield return null;
         }
 
+        // --------------------------------------------------------
+        // VALIDATION
+        // --------------------------------------------------------
+
         if (
             sampleCount == 0 ||
             !rotationInitialized
@@ -536,6 +781,10 @@ public class SharedAROriginManager :
             yield break;
         }
 
+        // --------------------------------------------------------
+        // AVERAGE POSITION
+        // --------------------------------------------------------
+
         Vector3 averagePosition =
             positionSum /
             sampleCount;
@@ -545,7 +794,13 @@ public class SharedAROriginManager :
                 averagedRotation
             );
 
-        if (isRescan)
+        // --------------------------------------------------------
+        // CREATE / RECALIBRATE
+        // --------------------------------------------------------
+
+        if (
+            isRescan
+        )
         {
             RecalibrateExistingOrigin(
                 averagePosition,
@@ -570,25 +825,34 @@ public class SharedAROriginManager :
             null;
     }
 
+    // ============================================================
+    // STABLE ORIGIN ROTATION
+    // ============================================================
+
     private Quaternion
         GetStableOriginRotation(
             Quaternion rawRotation
         )
     {
-        if (!forceHorizontalOrigin)
+        if (
+            !forceHorizontalOrigin
+        )
         {
             return rawRotation;
         }
 
-        // InitialAprilTag is flat on the
-        // table, so use one image edge to
-        // establish the shared X direction.
+        // --------------------------------------------------------
+        // INITIAL APRILTAG IS FLAT ON TABLE
+        // --------------------------------------------------------
+
         Vector3 tagRight =
             rawRotation *
             Vector3.right;
 
-        // Remove pitch/roll noise by
-        // projecting onto the table plane.
+        // --------------------------------------------------------
+        // REMOVE PITCH / ROLL
+        // --------------------------------------------------------
+
         tagRight =
             Vector3.ProjectOnPlane(
                 tagRight,
@@ -601,8 +865,9 @@ public class SharedAROriginManager :
         )
         {
             Debug.LogWarning(
-                "[SharedOrigin] Could not calculate " +
-                "horizontal marker rotation. " +
+                "[SharedOrigin] " +
+                "Could not calculate horizontal " +
+                "marker rotation. " +
                 "Using raw rotation."
             );
 
@@ -625,6 +890,10 @@ public class SharedAROriginManager :
         );
     }
 
+    // ============================================================
+    // RESCAN CHECK
+    // ============================================================
+
     private bool CanRescanOrigin()
     {
         if (
@@ -644,6 +913,10 @@ public class SharedAROriginManager :
                 MultiplayerPhase.HiderHiding;
     }
 
+    // ============================================================
+    // INITIAL ORIGIN
+    // ============================================================
+
     private void CreateInitialOrigin(
         Vector3 position,
         Quaternion rotation
@@ -655,13 +928,16 @@ public class SharedAROriginManager :
                 rotation
             );
 
-        if (!success)
+        if (
+            !success
+        )
         {
             return;
         }
 
         Debug.Log(
-            "[SharedOrigin] Initial ARAnchor created. " +
+            "[SharedOrigin] " +
+            "Initial ARAnchor created. " +
             "Position = " +
             SharedOrigin.position +
             " | Rotation = " +
@@ -670,8 +946,10 @@ public class SharedAROriginManager :
             sampleCount
         );
 
-        // Only the first successful scan
-        // reports OriginReady.
+        // --------------------------------------------------------
+        // REPORT ORIGIN READY ONCE
+        // --------------------------------------------------------
+
         if (
             !originReadyReported &&
             networkState != null &&
@@ -685,17 +963,16 @@ public class SharedAROriginManager :
                 .RequestOriginReady();
         }
 
-        // Only the first scan shows the
-        // long coordinate-set panel.
-        if (
-            coordinateSetPanel != null
-        )
-        {
-            StartCoroutine(
-                ShowCoordinateSetPanel()
-            );
-        }
+        // --------------------------------------------------------
+        // SHOW COORDINATE SET UI
+        // --------------------------------------------------------
+
+        ShowCoordinateSetUI();
     }
+
+    // ============================================================
+    // RECALIBRATE EXISTING ORIGIN
+    // ============================================================
 
     private void RecalibrateExistingOrigin(
         Vector3 position,
@@ -708,14 +985,16 @@ public class SharedAROriginManager :
                 rotation
             );
 
-        if (!success)
+        if (
+            !success
+        )
         {
             return;
         }
 
         Debug.Log(
-            "[SharedOrigin] Origin RECALIBRATED " +
-            "with a new ARAnchor. " +
+            "[SharedOrigin] " +
+            "Origin RECALIBRATED with a new ARAnchor. " +
             "Position = " +
             SharedOrigin.position +
             " | Rotation = " +
@@ -724,9 +1003,10 @@ public class SharedAROriginManager :
             sampleCount
         );
 
-        // Hider Mecchas stay in their current
-        // world positions. Only their shared
-        // network coordinates are recalculated.
+        // --------------------------------------------------------
+        // HIDER MECCHA RESYNC
+        // --------------------------------------------------------
+
         if (
             roleController != null &&
             roleController.IsHider() &&
@@ -740,56 +1020,57 @@ public class SharedAROriginManager :
                 .ResyncAllHiderMecchasAfterOriginChange();
         }
 
-        // Later scans only show the small
-        // two-second confirmation popup.
-        if (coordinateUpdatedPanel != null)
-        {
-            if (updatedPanelCoroutine != null)
-            {
-                StopCoroutine(
-                    updatedPanelCoroutine
-                );
-            }
+        // --------------------------------------------------------
+        // SHOW UPDATED UI
+        // --------------------------------------------------------
 
-            updatedPanelCoroutine =
-                StartCoroutine(
-                    ShowCoordinateUpdatedPanel()
-                );
-        }
+        ShowCoordinateUpdatedUI();
     }
+
+    // ============================================================
+    // REPLACE SHARED ORIGIN ANCHOR
+    // ============================================================
 
     private bool ReplaceSharedOriginAnchor(
         Vector3 position,
         Quaternion rotation
     )
     {
-        if (anchorManager == null)
+        if (
+            anchorManager == null
+        )
         {
             Debug.LogError(
-                "[SharedOrigin] ARAnchorManager " +
-                "is not assigned."
+                "[SharedOrigin] " +
+                "ARAnchorManager is not assigned."
             );
 
             return false;
         }
 
-        if (!anchorManager.enabled)
+        if (
+            !anchorManager.enabled
+        )
         {
             Debug.LogError(
-                "[SharedOrigin] ARAnchorManager " +
-                "is disabled."
+                "[SharedOrigin] " +
+                "ARAnchorManager is disabled."
             );
 
             return false;
         }
 
-        // Keep references to the old anchor
-        // until the new one has been created.
+        // --------------------------------------------------------
+        // KEEP OLD OBJECT UNTIL NEW ANCHOR EXISTS
+        // --------------------------------------------------------
+
         GameObject oldOriginObject =
             originObject;
 
-        // Create the new shared-origin object
-        // at the newly calibrated marker pose.
+        // --------------------------------------------------------
+        // CREATE NEW SHARED ORIGIN
+        // --------------------------------------------------------
+
         GameObject newOriginObject =
             new GameObject(
                 "SharedGameOrigin"
@@ -804,18 +1085,22 @@ public class SharedAROriginManager :
         newOriginObject.transform.localScale =
             Vector3.one;
 
-        // Convert the new origin into a
-        // persistent AR Foundation anchor.
+        // --------------------------------------------------------
+        // CREATE AR ANCHOR
+        // --------------------------------------------------------
+
         ARAnchor newAnchor =
             newOriginObject.AddComponent<
                 ARAnchor
             >();
 
-        if (newAnchor == null)
+        if (
+            newAnchor == null
+        )
         {
             Debug.LogError(
-                "[SharedOrigin] Failed to create " +
-                "the new ARAnchor."
+                "[SharedOrigin] " +
+                "Failed to create the new ARAnchor."
             );
 
             Destroy(
@@ -824,6 +1109,10 @@ public class SharedAROriginManager :
 
             return false;
         }
+
+        // --------------------------------------------------------
+        // STORE NEW REFERENCES
+        // --------------------------------------------------------
 
         originObject =
             newOriginObject;
@@ -837,9 +1126,13 @@ public class SharedAROriginManager :
         originLocked =
             true;
 
-        // Create a new debug sphere as
-        // a child of the latest ARAnchor.
-        if (originDebugPrefab != null)
+        // --------------------------------------------------------
+        // DEBUG SPHERE
+        // --------------------------------------------------------
+
+        if (
+            originDebugPrefab != null
+        )
         {
             originDebugObject =
                 Instantiate(
@@ -861,9 +1154,10 @@ public class SharedAROriginManager :
                 null;
         }
 
-        // Destroying the old origin also
-        // destroys its old ARAnchor and
-        // old debug-sphere child.
+        // --------------------------------------------------------
+        // DESTROY OLD ORIGIN
+        // --------------------------------------------------------
+
         if (
             oldOriginObject != null &&
             oldOriginObject !=
@@ -878,44 +1172,270 @@ public class SharedAROriginManager :
         return true;
     }
 
+    // ============================================================
+    // STEREO MODE CHECK
+    // ============================================================
+
+    private bool IsStereoUIConfigured()
+    {
+        return
+            leftCoordinateSetPanel != null &&
+            rightCoordinateSetPanel != null &&
+            leftCoordinateUpdatedPanel != null &&
+            rightCoordinateUpdatedPanel != null;
+    }
+
+    // ============================================================
+    // SHOW COORDINATE SET UI
+    // ============================================================
+
+    private void ShowCoordinateSetUI()
+    {
+        if (
+            coordinateSetPanelCoroutine !=
+            null
+        )
+        {
+            StopCoroutine(
+                coordinateSetPanelCoroutine
+            );
+
+            coordinateSetPanelCoroutine =
+                null;
+        }
+
+        coordinateSetPanelCoroutine =
+            StartCoroutine(
+                ShowCoordinateSetPanel()
+            );
+    }
+
+    // ============================================================
+    // SHOW COORDINATE UPDATED UI
+    // ============================================================
+
+    private void ShowCoordinateUpdatedUI()
+    {
+        if (
+            updatedPanelCoroutine !=
+            null
+        )
+        {
+            StopCoroutine(
+                updatedPanelCoroutine
+            );
+        }
+
+        updatedPanelCoroutine =
+            StartCoroutine(
+                ShowCoordinateUpdatedPanel()
+            );
+    }
+
+    // ============================================================
+    // SHOW COORDINATE SET PANEL
+    // ============================================================
+
     private IEnumerator
         ShowCoordinateSetPanel()
     {
-        coordinateSetPanel
-            .SetActive(true);
+        bool stereo =
+            IsStereoUIConfigured();
+
+        // --------------------------------------------------------
+        // HIDE ALL VERSIONS FIRST
+        // --------------------------------------------------------
+
+        SetPanelActive(
+            coordinateSetPanel,
+            false
+        );
+
+        SetPanelActive(
+            leftCoordinateSetPanel,
+            false
+        );
+
+        SetPanelActive(
+            rightCoordinateSetPanel,
+            false
+        );
+
+        // --------------------------------------------------------
+        // SHOW APPROPRIATE UI
+        // --------------------------------------------------------
+
+        if (
+            stereo
+        )
+        {
+            SetPanelActive(
+                leftCoordinateSetPanel,
+                true
+            );
+
+            SetPanelActive(
+                rightCoordinateSetPanel,
+                true
+            );
+        }
+        else
+        {
+            SetPanelActive(
+                coordinateSetPanel,
+                true
+            );
+        }
+
+        // --------------------------------------------------------
+        // WAIT
+        // --------------------------------------------------------
 
         yield return
             new WaitForSeconds(
                 panelDuration
             );
 
-        coordinateSetPanel
-            .SetActive(false);
+        // --------------------------------------------------------
+        // HIDE
+        // --------------------------------------------------------
+
+        SetPanelActive(
+            coordinateSetPanel,
+            false
+        );
+
+        SetPanelActive(
+            leftCoordinateSetPanel,
+            false
+        );
+
+        SetPanelActive(
+            rightCoordinateSetPanel,
+            false
+        );
+
+        coordinateSetPanelCoroutine =
+            null;
     }
+
+    // ============================================================
+    // SHOW COORDINATE UPDATED PANEL
+    // ============================================================
 
     private IEnumerator
         ShowCoordinateUpdatedPanel()
     {
-        coordinateUpdatedPanel
-            .SetActive(true);
+        bool stereo =
+            IsStereoUIConfigured();
+
+        // --------------------------------------------------------
+        // HIDE ALL VERSIONS FIRST
+        // --------------------------------------------------------
+
+        SetPanelActive(
+            coordinateUpdatedPanel,
+            false
+        );
+
+        SetPanelActive(
+            leftCoordinateUpdatedPanel,
+            false
+        );
+
+        SetPanelActive(
+            rightCoordinateUpdatedPanel,
+            false
+        );
+
+        // --------------------------------------------------------
+        // SHOW APPROPRIATE UI
+        // --------------------------------------------------------
+
+        if (
+            stereo
+        )
+        {
+            SetPanelActive(
+                leftCoordinateUpdatedPanel,
+                true
+            );
+
+            SetPanelActive(
+                rightCoordinateUpdatedPanel,
+                true
+            );
+        }
+        else
+        {
+            SetPanelActive(
+                coordinateUpdatedPanel,
+                true
+            );
+        }
+
+        // --------------------------------------------------------
+        // WAIT
+        // --------------------------------------------------------
 
         yield return
             new WaitForSeconds(
                 updatedPanelDuration
             );
 
-        coordinateUpdatedPanel
-            .SetActive(false);
+        // --------------------------------------------------------
+        // HIDE
+        // --------------------------------------------------------
+
+        SetPanelActive(
+            coordinateUpdatedPanel,
+            false
+        );
+
+        SetPanelActive(
+            leftCoordinateUpdatedPanel,
+            false
+        );
+
+        SetPanelActive(
+            rightCoordinateUpdatedPanel,
+            false
+        );
 
         updatedPanelCoroutine =
             null;
     }
 
+    // ============================================================
+    // SET PANEL ACTIVE SAFELY
+    // ============================================================
+
+    private void SetPanelActive(
+        GameObject panel,
+        bool active
+    )
+    {
+        if (
+            panel != null
+        )
+        {
+            panel.SetActive(
+                active
+            );
+        }
+    }
+
+    // ============================================================
+    // WORLD → SHARED
+    // ============================================================
+
     public Vector3 WorldToSharedPosition(
         Vector3 worldPosition
     )
     {
-        if (!HasOrigin)
+        if (
+            !HasOrigin
+        )
         {
             return Vector3.zero;
         }
@@ -926,11 +1446,17 @@ public class SharedAROriginManager :
             );
     }
 
+    // ============================================================
+    // WORLD → SHARED ROTATION
+    // ============================================================
+
     public Quaternion WorldToSharedRotation(
         Quaternion worldRotation
     )
     {
-        if (!HasOrigin)
+        if (
+            !HasOrigin
+        )
         {
             return Quaternion.identity;
         }
@@ -942,11 +1468,17 @@ public class SharedAROriginManager :
             worldRotation;
     }
 
+    // ============================================================
+    // SHARED → WORLD
+    // ============================================================
+
     public Vector3 SharedToWorldPosition(
         Vector3 localPosition
     )
     {
-        if (!HasOrigin)
+        if (
+            !HasOrigin
+        )
         {
             return Vector3.zero;
         }
@@ -957,11 +1489,17 @@ public class SharedAROriginManager :
             );
     }
 
+    // ============================================================
+    // SHARED → WORLD ROTATION
+    // ============================================================
+
     public Quaternion SharedToWorldRotation(
         Quaternion localRotation
     )
     {
-        if (!HasOrigin)
+        if (
+            !HasOrigin
+        )
         {
             return Quaternion.identity;
         }

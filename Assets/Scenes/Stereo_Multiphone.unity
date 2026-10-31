@@ -422,8 +422,8 @@ MonoBehaviour:
   minPresenceConfidence: 0.5
   minTrackingConfidence: 0.5
   detectionFPS: 15
-  processingWidth: 640
-  processingHeight: 480
+  processingWidth: 480
+  processingHeight: 360
   mirrorX: 1
   mirrorY: 1
   logDetection: 0
@@ -4238,10 +4238,14 @@ MonoBehaviour:
   rescanLostDuration: 0.5
   rescanCooldown: 2
   forceHorizontalOrigin: 1
-  coordinateSetPanel: {fileID: 1896569272}
+  coordinateSetPanel: {fileID: 0}
   panelDuration: 10
-  coordinateUpdatedPanel: {fileID: 975414863}
+  coordinateUpdatedPanel: {fileID: 0}
   updatedPanelDuration: 2
+  leftCoordinateSetPanel: {fileID: 1675151431}
+  rightCoordinateSetPanel: {fileID: 2005363725}
+  leftCoordinateUpdatedPanel: {fileID: 1028334852}
+  rightCoordinateUpdatedPanel: {fileID: 526604920}
   originDebugPrefab: {fileID: 6612034928311420177, guid: 35629ae4dab99d24abae87332023709a, type: 3}
 --- !u!1 &283557168
 GameObject:
@@ -6220,8 +6224,8 @@ MonoBehaviour:
   rightEyeDisplay: {fileID: 1995241792}
   stereoDisplayCanvas: {fileID: 1152324673}
   interpupillaryDistance: 0.064
-  renderTextureWidth: 1920
-  renderTextureHeight: 1080
+  renderTextureWidth: 1280
+  renderTextureHeight: 720
   stereoLayerName: StereoAR
   uiLayerName: UI
   useARCameraProjection: 1
@@ -24275,7 +24279,7 @@ MonoBehaviour:
   useDepthEstimation: 1
   depthSensitivity: 1.2
   minimumDepth: 0.25
-  maximumDepth: 1.5
+  maximumDepth: 1.4
   baseGunScale: 1
   minimumGunScale: 0.9
   maximumGunScale: 1.25
